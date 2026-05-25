@@ -5,9 +5,33 @@ from pathlib import Path
 from datetime import datetime
 import ast
 
+from ddgs import DDGS
+
 from utils.math_eval import evaluate_ast
 
 class Tools:
+    def internet_search(self, query: str) -> str:
+        """
+        Recherche des informations récentes ou des actualités sur Internet.
+        A utiliser uniquement si Wikipédia ou tes connaissances ne suffisent pas.
+        query: les mots-clés de la recherche.
+        """
+        try:
+            with DDGS() as ddgs:
+                results = [r for r in ddgs.text(query, max_results=3)]
+
+            if not results:
+                return f"No result found on Internet for '{query}'."
+            
+            context = f"Results for Internet search of '{query}': \n\n"
+            for i, res in enumerate(results, 1):
+                context += f"[{i}] Source: {res['href']}\nExtract: {res['body']}\n\n"
+        
+            return context
+
+        except Exception as e:
+            return f"Error on Internet search: {e}"
+
     def calculate(self, expression: str) -> str:
         """
         Evaluate a simple mathematical expression.
