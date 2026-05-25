@@ -77,7 +77,7 @@ class Tools:
             # Reading the file with size limitation (1000 kb so 1Mb)
             max_bytes = 1000 * 1024
             if file_path.stat().st_size > max_bytes:
-                return f"Error: The file is too big ({file_path().st_size / 1024:.1f}). The limit is 1Mb."
+                return f"Error: The file is too big ({file_path().stat().st_size / 1024:.1f}). The limit is 1Mb."
             
             with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
@@ -91,7 +91,7 @@ class Tools:
     def get_weather(self, city: str) -> str:
         """
         Obtient les conditions météo actuelles pour une ville donnée.
-        city: Le nom de la ville ou de la région (example: )
+        city: Le nom de la ville ou de la région (example: 'Paris', 'Texas')
         """
         try:
             # wttr.in?format=3 return a single clean line: "Paris: ⛅️ +18°C ↙️ 11km/h"
@@ -104,7 +104,7 @@ class Tools:
             response = requests.get(url, headers=headers, timeout=5)
             response.raise_for_status()
 
-            if "Location not found" in response.text or "wttr.in" in response.text.lower():
+            if "Location not found" in response.text:
                 return f"meteo not found for the city: '{city}'."
             
             return f"Meteo in {city}:\n{response.text.strip()}"
@@ -223,7 +223,7 @@ class Tools:
                         "description": description,
                         "parameters": {
                             "type": "object",
-                            "properties": {},
+                            "properties": properties,
                             "required": required_params,
                         }
                     }
