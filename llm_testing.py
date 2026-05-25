@@ -3,6 +3,8 @@ import inspect
 import ast
 import operator
 import json
+import os
+from pathlib import Path
 from datetime import datetime
 
 class Tools:
@@ -54,11 +56,65 @@ class Tools:
         except Exception as e:
             return f"Error: {e}"
     
-    def read_file(path: str) -> str:
-        return ""
+    def read_file(self, path: str) -> str:
+        """
+        Lit le contenu textuel d'un fichier local (code, txt, md, csv, etc.) pour l'analyser.
+        Prend en charge les chemins relatifs ou absolus.
+        path: Le chemin vers le fichier (example. 'data.txt', '/home/user/script.py' ou 'C:\\Users\\...').
+        """
+        try:
+            clean_path = path.strip("'\"")
 
-    def get_weather():
-        pass
+            # If the path start with a letter of Window disk (ex: C:\ ou D:\) and we're on WSL/Linux
+            if os.name == 'posix' and len(clean_path) > 1 and clean_path[1] == ':':
+                drive = clean_path[0].lower()
+                remainder = clean_path[2:].replace('\\', '/')
+                clean_path = f"/mnt/{drive}{remainder}"
+            
+            file_path = Path(clean_path)
+
+            if not file_path.exists():
+                return f"Error: The file at path '{path}' doesn't exist."
+            if not file_path.is_file():
+                return f"Error: '{path} is a folder, not a readable file."
+
+            # Reading the file with size limitation (1000 kb so 1Mb)
+            max_bytes = 1000 * 1024
+            if file_path.stat().st_size > max_bytes:
+                return f"Error: The file is too big ({file_path().st_size / 1024:.1f}). The limit is 1Mb."
+            
+            with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+
+            return f"content of file '{file_path.name}': \n{content}"
+        
+        except Exception as e:
+            return f"Error: Can't read the file: {e}"
+
+
+    def get_weather(self, city: str) -> str:
+        """
+        Obtient les conditions météo actuelles pour une ville donnée.
+        city: Le nom de la ville ou de la région (example: )
+        """
+        try:
+            # wttr.in?format=3 return a single clean line: "Paris: ⛅️ +18°C ↙️ 11km/h"
+            # format=4 give even more details (wetness, rain...)
+            url = f"https://wttr.in/{city}?format=4&lang=fr"
+            headers = {
+                "User-Agent": "local_llm_client/1.0"
+            }
+
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+
+            if "Location not found" in response.text or "wttr.in" in response.text.lower():
+                return f"meteo not found for the city: '{city}'."
+            
+            return f"Meteo in {city}:\n{response.text.strip()}"
+
+        except Exception as e:
+            return f"Can't get meteo for {city}. Error: {e}."
 
     def search_wikipedia(self, query: str) -> str:
         """
