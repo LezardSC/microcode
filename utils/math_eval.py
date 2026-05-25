@@ -1,7 +1,7 @@
 import ast
 import operator
 
-def evaluate_ast(self, node):
+def evaluate_ast(node):
     allowed_operators = {
         ast.Add: operator.add,
         ast.Sub: operator.sub,
@@ -9,6 +9,8 @@ def evaluate_ast(self, node):
         ast.Div: operator.truediv,
         ast.Pow: operator.pow,
         ast.USub: operator.neg,
+        ast.Mod: operator.mod,
+        ast.FloorDiv: operator.floordiv,
     }
 
     # Check if number
@@ -18,13 +20,13 @@ def evaluate_ast(self, node):
     # check if negative number
     elif isinstance(node, ast.UnaryOp):
         if type(node.op) in allowed_operators:
-            return allowed_operators[type(node.op)](self._evaluate_ast(node.operand))
+            return allowed_operators[type(node.op)](evaluate_ast(node.operand))
     
     # check if operation
     elif isinstance(node, ast.BinOp):
         if type(node.op) in allowed_operators:
-            left = self._evaluate_ast(node.left)
-            right = self._evaluate_ast(node.right)
+            left = evaluate_ast(node.left)
+            right = evaluate_ast(node.right)
 
             if isinstance(node.op, ast.Pow) and right > 1000:
                 raise ValueError("exponant too large.")
