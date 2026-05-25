@@ -38,6 +38,7 @@ class Tools:
         expression: The operation to calculate (example: '2 + 2', '10 / 3 + 1').
         """
         try:
+            # split an expression into a tree of mathematical objects
             tree = ast.parse(expression, mode='eval').body
             resultat = evaluate_ast(tree)
             
@@ -49,6 +50,7 @@ class Tools:
             return "Error: Can't divide by 0."
         except Exception as e:
             return f"Error: {e}"
+
     
     def read_file(self, path: str) -> str:
         """
@@ -183,8 +185,11 @@ class Tools:
         """"Generate dynamically the 'tools' config for the API."""
 
         schema = []
+
+        # get all functions in Tools class
         for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
             if not name.startswith('_') and name != 'generate_schema':
+                # read the docstring and change it into a description of the tool.
                 description = inspect.getdoc(method) or "No description given."
 
                 sig = inspect.signature(method)
