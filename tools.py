@@ -1,43 +1,13 @@
-import requests
-import inspect
-import ast
-import operator
-import json
 import os
+import inspect
+import requests
 from pathlib import Path
 from datetime import datetime
+import ast
+
+from utils.math_eval import evaluate_ast
 
 class Tools:
-    def _evaluate_ast(self, node):
-        allowed_operators = {
-            ast.Add: operator.add,
-            ast.Sub: operator.sub,
-            ast.Mult: operator.mul,
-            ast.Div: operator.truediv,
-            ast.Pow: operator.pow,
-            ast.USub: operator.neg,
-        }
-
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return node.value
-        
-        elif isinstance(node, ast.UnaryOp):
-            if type(node.op) in allowed_operators:
-                return allowed_operators[type(node.op)](self._evaluate_ast(node.operand))
-        
-        elif isinstance(node, ast.BinOp):
-            if type(node.op) in allowed_operators:
-                left = self._evaluate_ast(node.left)
-                right = self._evaluate_ast(node.right)
-
-                if isinstance(node.op, ast.Pow) and right > 1000:
-                    raise ValueError("exponant too large.")
-                
-                return allowed_operators[type(node.op)](left, right)
-        
-        raise ValueError(f"Unauthorized element: {type(node).__name__}")
-
-
     def calculate(self, expression: str) -> str:
         """
         Evaluate a simple mathematical expression.
@@ -45,7 +15,7 @@ class Tools:
         """
         try:
             tree = ast.parse(expression, mode='eval').body
-            resultat = self._evaluate_ast(tree)
+            resultat = evaluate_ast(tree)
             
             return str(resultat)
         
@@ -232,104 +202,3 @@ class Tools:
 
         return schema
 
-
-class LocalLLMClient:
-    """Handle communication with the locale API of the LLM."""
-    def __init__(self, model_name="qwen3.5:9b", base_url="http://localhost:11434/api/chat"):
-        self.model = model_name
-        self.url = base_url
-        self.messages = []
-        self.tools_instance = Tools()
-        self.tools_schema = Tools.generate_schema()
-    
-    def send_message(self, user_content: str) -> str:
-        self.messages.append({"role": "user", "content": user_content})
-
-        request_payload = {
-            "model": self.model,
-            "messages": self.messages,
-            "stream": False,
-            "tools": self.tools_schema
-        }
-
-        response = requests.post(self.url, json=request_payload)
-        response.raise_for_status()
-        message = response.json().get("message", {})
-
-        if "tool_calls" in message:
-            self.messages.append({
-                "role": "assistant",
-                "content": message.get("content", ""),
-                "tool_calls": message["tool_calls"]
-            })
-
-            for tool_call in message["tool_calls"]:
-                func_name = tool_call["function"]["name"]
-
-                if hasattr(self.tools_instance, func_name):
-                    func = getattr(self.tools_instance, func_name)
-
-                    arguments = tool_call["function"].get("arguments", {})
-                    if isinstance(arguments, str):
-                        try:
-                            arguments = json.loads(arguments)
-                        except json.JSONDecodeError:
-                            arguments = {}
-                    
-                    try:
-                        result = func(**arguments)
-                    except Exception as e:
-                        result = f"Execution error for {func_name}: {e}"
-
-                    self.messages.append({
-                        "role": "tool",
-                        "content": str(result),
-                    })
-                else:
-                    self.messages.append({
-                        "role": "tool",
-                        "content": f"Error: the tool {func_name} doesn't exit.",
-                    })
-
-            request_payload["messages"] = self.messages
-            request_payload.pop("tools", None)
-
-            final_response = requests.post(self.url, json=request_payload)
-            final_response.raise_for_status()
-            final_message = final_response.json().get("message", {})
-
-            self.messages.append(final_message)
-
-            return final_message.get("content", "")
-
-        else:
-            self.messages.append(message)
-            return message.get("content", "")
-
-
-def main():
-    print("Bienvenue dans l'instance de Qwen3.5:9b\n")
-    client = LocalLLMClient()
-
-    while True:
-        try:
-            content = input("Vous: ")
-
-            if content.lower() in ["quit", "exit"]:
-                print("\nEnd of conversation.")
-                break
-
-            if not content.strip():
-                continue
-
-            assistant_reply = client.send_message(content)
-            print(f"\nAssistant:\n{assistant_reply}\n")
-
-        except requests.exceptions.RequestException as e:
-            print(f"\nNetwork Error: Can't join the API: {e}")
-        except  KeyboardInterrupt:
-            print("\nEnd of conversation.")
-            break
-
-if __name__ == "__main__":
-    main()
