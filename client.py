@@ -1,16 +1,59 @@
 import requests
 import json
+from pathlib import Path
+
 from tools import Tools
+
+DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. Réponds de manière concise et précise. Si tu ne connais pas la réponse, dis que tu ne sais pas plutôt que d'inventer une réponse."
 
 class LocalLLMClient:
     """Handle communication with the locale API of the LLM."""
-    def __init__(self, model_name="qwen3.5:9b", base_url="http://localhost:11434/api/chat"):
+    def __init__(self, model_name="qwen3.5:9b", base_url="http://localhost:11434/api/chat", sys_prompt_path='system_prompt.txt'):
         self.model = model_name
         self.url = base_url
-        self.messages = []
+
+        system_prompt = self._read_system_prompt(sys_prompt_path)
+        if not system_prompt:
+            print(f"Error: Can't load '{sys_prompt_path}'. Using default system prompt.")
+            system_prompt = DEFAULT_SYS_PROMPT
+
+        self.messages = [{
+            "role": "system",
+            "content": system_prompt
+        }]
         self.tools_instance = Tools()
         self.tools_schema = Tools.generate_schema()
     
+    def _read_system_prompt(self, path: str) -> str:
+        max_bytes = 50_000
+        p = Path(path)
+
+        try:
+            target = p.resolve(strict=False)
+        except Exception as e:
+            print(f"Error: Invalid system prompt path '{path}': {e}.")
+            return ""
+        
+        try:
+            with open(target, "rb") as f:
+                data = f.read(max_bytes + 1)
+        except FileNotFoundError:
+            print(f"Error: System prompt file '{path}' not found.")
+            return ""
+        except (PermissionError, IsADirectoryError, OSError) as e:
+            print(f"Error: Cannot read system prompt from '{path}': {e}.")
+            return ""
+
+        if len(data) > max_bytes:
+            print(f"Error: System prompt file '{path}' exceeds the maximum size of {max_bytes} bytes.")
+            return ""
+        
+        try:
+            return data.decode(encoding="utf-8", errors="replace")
+        except Exception as e:
+            print(f"Error: Cannot decode system prompt from '{path}': {e}.")
+            return ""
+
     def send_message(self, user_content: str) -> str:
         self.messages.append({"role": "user", "content": user_content})
 
