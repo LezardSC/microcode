@@ -57,18 +57,27 @@ class LocalLLMClient:
     def send_message(self, user_content: str) -> str:
         self.messages.append({"role": "user", "content": user_content})
 
-        request_payload = {
-            "model": self.model,
-            "messages": self.messages,
-            "stream": False,
-            "tools": self.tools_schema
-        }
+        MAX_INTERATIONS = 15
+        for _ in range(MAX_INTERATIONS):
+            print("Iteration")  # Debug log to track iterations
 
-        response = requests.post(self.url, json=request_payload)
-        response.raise_for_status()
-        message = response.json().get("message", {})
+            request_payload = {
+                "model": self.model,
+                "messages": self.messages,
+                "stream": False,
+                "tools": self.tools_schema
+            }
 
-        if "tool_calls" in message:
+            response = requests.post(self.url, json=request_payload)
+            response.raise_for_status()
+            message = response.json().get("message", {})
+
+            if "tool_calls" not in message:
+                print("No tool calls, final response received.")  # Debug log for final response
+
+                self.messages.append(message)
+                return message.get("content", "")
+
             self.messages.append({
                 "role": "assistant",
                 "content": message.get("content", ""),
@@ -77,6 +86,8 @@ class LocalLLMClient:
 
             for tool_call in message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
+
+                print(f"Tool call detected: {func_name}")  # Debug log for tool calls
 
                 if hasattr(self.tools_instance, func_name):
                     func = getattr(self.tools_instance, func_name)
@@ -92,6 +103,8 @@ class LocalLLMClient:
                         result = func(**arguments)
                     except Exception as e:
                         result = f"Execution error for {func_name}: {e}"
+                    
+                    print(f"Tool '{func_name}' executed with result: {result}")  # Debug log for tool execution result
 
                     self.messages.append({
                         "role": "tool",
@@ -103,18 +116,4 @@ class LocalLLMClient:
                         "content": f"Error: the tool {func_name} doesn't exit.",
                     })
 
-            request_payload["messages"] = self.messages
-            request_payload.pop("tools", None)
-
-            final_response = requests.post(self.url, json=request_payload)
-            final_response.raise_for_status()
-            final_message = final_response.json().get("message", {})
-
-            self.messages.append(final_message)
-
-            return final_message.get("content", "")
-
-        else:
-            self.messages.append(message)
-            return message.get("content", "")
-
+        return "Error: Maximum iterations reached without final response."
