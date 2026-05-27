@@ -18,14 +18,14 @@ class Tools:
         """
         try:
             with DDGS() as ddgs:
-                results = [r for r in ddgs.text(query, max_results=3)]
+                results = [r for r in ddgs.text(query, max_results=5)]
 
             if not results:
                 return f"No result found on Internet for '{query}'."
             
             context = f"Results for Internet search of '{query}': \n\n"
             for i, res in enumerate(results, 1):
-                context += f"[{i}] Source: {res['href']}\nExtract: {res['body']}\n\n"
+                context += f"[{i}] Source: {res['href']}\nExtract: {res['body'][:1000]}\n\n"
         
             return context
 
@@ -74,8 +74,8 @@ class Tools:
             if not file_path.is_file():
                 return f"Error: '{path} is a folder, not a readable file."
 
-            # Reading the file with size limitation (1000 kb so 1Mb)
-            max_bytes = 1000 * 1024
+            # Reading the file with size limitation (500 kb)
+            max_bytes = 500 * 1024
             if file_path.stat().st_size > max_bytes:
                 return f"Error: The file is too big ({file_path().stat().st_size / 1024:.1f}). The limit is 1Mb."
             
@@ -151,6 +151,7 @@ class Tools:
                 "explaintext": True,
                 "prop": "extracts",
                 "exlimit": 1,
+                "exintro": True,
                 "format": "json",
                 "redirects": 1
             }
