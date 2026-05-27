@@ -59,7 +59,7 @@ class LocalLLMClient:
 
         MAX_INTERATIONS = 15
         for _ in range(MAX_INTERATIONS):
-            print("Iteration")  # Debug log to track iterations
+            # print("Iteration")  # Debug log to track iterations
 
             request_payload = {
                 "model": self.model,
@@ -73,7 +73,7 @@ class LocalLLMClient:
             message = response.json().get("message", {})
 
             if "tool_calls" not in message:
-                print("No tool calls, final response received.")  # Debug log for final response
+                # print("No tool calls, final response received.")  # Debug log for final response
 
                 self.messages.append(message)
                 return message.get("content", "")
@@ -87,7 +87,7 @@ class LocalLLMClient:
             for tool_call in message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
 
-                print(f"Tool call detected: {func_name}")  # Debug log for tool calls
+                # print(f"Tool call detected: {func_name}")  # Debug log for tool calls
 
                 if hasattr(self.tools_instance, func_name):
                     func = getattr(self.tools_instance, func_name)
@@ -104,7 +104,7 @@ class LocalLLMClient:
                     except Exception as e:
                         result = f"Execution error for {func_name}: {e}"
                     
-                    print(f"Tool '{func_name}' executed with result: {result}")  # Debug log for tool execution result
+                    # print(f"Tool '{func_name}' executed with result: {result}")  # Debug log for tool execution result
 
                     self.messages.append({
                         "role": "tool",
