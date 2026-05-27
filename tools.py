@@ -6,26 +6,63 @@ from datetime import datetime
 import ast
 
 from ddgs import DDGS
+from bs4 import BeautifulSoup
 
 from utils.math_eval import evaluate_ast
 
 class Tools:
-    def internet_search(self, query: str) -> str:
+    def fetch_url(self, url: str) -> str:
+        """
+        Lit et extrait le contenu textuel complet d'une page Web spécifique.
+        Peut être utilisé après l'outil `search_web` en lui passant l'URL exacte à explorer.
+        url: L'adresse complète de la page (ex: 'https://google.com') 
+        """
+        try:
+            # Using a common User-Agent to avoid being blocked by some websites.
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+
+            page = requests.get(url, headers=headers, timeout=8)
+            page.raise_for_status()
+
+            soup = BeautifulSoup(page.content, 'html.parser')
+
+            # Cleaning the page
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'form']):
+                element.extract()
+
+            text = soup.get_text(separator=' ', strip=True)
+
+            extract = text[:5000]
+            if len(text) > 5000:
+                extract += "\n\n[The content is too long, only the first 5000 characters are shown.]"
+
+            return f"Content of the page at URL '{url}':\n{extract}"
+
+        except requests.exceptions.Timeout:
+            return f"Error: The request to '{url}' timed out."
+        except Exception as e:
+            return f"Error fetching URL: {e}"
+
+    def search_web(self, query: str) -> str:
         """
         Recherche des informations récentes ou des actualités sur Internet.
-        A utiliser uniquement si Wikipédia ou tes connaissances ne suffisent pas.
+        A utiliser uniquement si tes connaissances ne suffisent pas.
+        Utilise cet outil pour découvrir des URL pertinentes que tu pourras ensuite explorer avec `fetch_url` si besoin.
         query: les mots-clés de la recherche.
         """
         try:
             with DDGS() as ddgs:
-                results = [r for r in ddgs.text(query, max_results=5)]
+                results = [r for r in ddgs.text(query, max_results=10)]
 
             if not results:
                 return f"No result found on Internet for '{query}'."
             
             context = f"Results for Internet search of '{query}': \n\n"
             for i, res in enumerate(results, 1):
-                context += f"[{i}] Source: {res['href']}\nExtract: {res['body'][:1000]}\n\n"
+                title = res.get('title', 'unknown title')
+                context += f"[{i}] Title: {title}\nURL: {res['href']}\nExtract: {res['body'][:1000]}\n\n"
         
             return context
 
@@ -101,13 +138,14 @@ class Tools:
                 "User-Agent": "local_llm_client/1.0"
             }
 
-            response = requests.get(url, headers=headers, timeout=5)
-            response.raise_for_status()
+            page = requests.get(url, headers=headers, timeout=8)
+            page.raise_for_status()
 
-            if "Location not found" in response.text:
+
+            if "Location not found" in page.text:
                 return f"meteo not found for the city: '{city}'."
             
-            return f"Meteo in {city}:\n{response.text.strip()}"
+            return f"Meteo in {city}:\n{page.text.strip()}"
 
         except Exception as e:
             return f"Can't get meteo for {city}. Error: {e}."
