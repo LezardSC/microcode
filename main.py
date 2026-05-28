@@ -17,7 +17,11 @@ def main():
                 continue
 
             assistant_reply = client.send_message(content)
-            print(f"\nAssistant:\n{assistant_reply}\n")
+
+            print(f"\n\nAssistant:\n")
+            for text_fragment in assistant_reply:
+                print(text_fragment, end="", flush=True)
+            print()
 
         except requests.exceptions.RequestException as e:
             print(f"\nNetwork Error: Can't join the API: {e}")
