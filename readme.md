@@ -58,7 +58,7 @@ Ce projet est conçu de manière itérative, voici les étapes approximatives de
 - Deeper Internet search ✅
 - Maîtrise du mode thinking: comprendre, exploiter ou désactiver le <think> de Qwen3.5
 - Gestion du contexte qui grandit: troncature, résumé ou archivage des vieux tours pour ne pas exploser la fenêtre
-- Streaming des réponses: afficher les tokens au fur et à mesure (ergonomie)
+- Streaming des réponses: afficher les tokens au fur et à mesure (ergonomie) ✅
 - Multimodalité - images
 
 ### Phase 3 - Montée de niveau

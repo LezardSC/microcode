@@ -57,34 +57,49 @@ class LocalLLMClient:
     def send_message(self, user_content: str) -> str:
         self.messages.append({"role": "user", "content": user_content})
 
-        MAX_INTERATIONS = 15
-        for _ in range(MAX_INTERATIONS):
+        MAX_ITERATIONS = 15
+        for _ in range(MAX_ITERATIONS):
             # print("Iteration")  # Debug log to track iterations
 
             request_payload = {
                 "model": self.model,
                 "messages": self.messages,
-                "stream": False,
+                "stream": True,
                 "tools": self.tools_schema
             }
 
             response = requests.post(self.url, json=request_payload)
             response.raise_for_status()
-            message = response.json().get("message", {})
 
-            if "tool_calls" not in message:
-                # print("No tool calls, final response received.")  # Debug log for final response
-
-                self.messages.append(message)
-                return message.get("content", "")
-
-            self.messages.append({
+            accumulated_message = {
                 "role": "assistant",
-                "content": message.get("content", ""),
-                "tool_calls": message["tool_calls"]
-            })
+                "content": "",
+            }
 
-            for tool_call in message["tool_calls"]:
+            for line in response.iter_lines(decode_unicode=True):
+                if line:
+                    chunk = json.loads(line)
+                    if "message" in chunk:
+                        msg_chunk = chunk["message"]
+
+                        content_piece = msg_chunk.get("content", "")
+                        if content_piece:
+                            accumulated_message["content"] += content_piece
+                            yield content_piece  # Stream the content piece to the caller
+                        
+                        if "tool_calls" in msg_chunk:
+                            accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
+            
+            if accumulated_message["content"]:
+                print()  # Move to the next line after streaming the assistant's response
+
+            if "tool_calls" not in accumulated_message:
+                self.messages.append(accumulated_message)
+                return accumulated_message.get("content", "")
+
+            self.messages.append(accumulated_message)
+
+            for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
 
                 # print(f"Tool call detected: {func_name}")  # Debug log for tool calls
