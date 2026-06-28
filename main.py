@@ -2,8 +2,7 @@ import requests
 from client import LocalLLMClient
 
 def main():
-    print("Bienvenue dans l'instance de Qwen3.5:9b\n")
-    client = LocalLLMClient()
+    client = LocalLLMClient(sys_prompt_path='system_prompt.txt')
 
     while True:
         try:
