@@ -9,9 +9,15 @@ DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. RÃ©ponds de maniÃ
 
 class LocalLLMClient:
     """Handle communication with the locale API of the LLM."""
-    def __init__(self, model_name="qwen3.5:9b", base_url="http://localhost:11434/api/chat", sys_prompt_path='system_prompt.txt'):
+    def __init__(
+            self,
+            model_name="qwen3.5:9b",
+            base_url="http://localhost:11434/api/chat",
+            sys_prompt_path='system_prompt.txt',
+            max_iterations=15):
         self.model = model_name
         self.url = base_url
+        self.max_iterations = max_iterations
 
         system_prompt = self._read_system_prompt(sys_prompt_path)
         if not system_prompt:
@@ -58,8 +64,7 @@ class LocalLLMClient:
     def send_message(self, user_content: str) -> Iterator[str]:
         self.messages.append({"role": "user", "content": user_content})
 
-        MAX_ITERATIONS = 15
-        for _ in range(MAX_ITERATIONS):
+        for _ in range(self.max_iterations):
             request_payload = {
                 "model": self.model,
                 "messages": self.messages,
@@ -78,6 +83,7 @@ class LocalLLMClient:
             for line in response.iter_lines(decode_unicode=True):
                 if line:
                     chunk = json.loads(line)
+                    # print(json.dumps(chunk, indent=2, ensure_ascii=False))
                     if "message" in chunk:
                         msg_chunk = chunk["message"]
 
