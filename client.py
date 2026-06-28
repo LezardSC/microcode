@@ -1,6 +1,7 @@
 import requests
 import json
 from pathlib import Path
+from typing import Iterator
 
 from tools import Tools
 
@@ -54,13 +55,11 @@ class LocalLLMClient:
             print(f"Error: Cannot decode system prompt from '{path}': {e}.")
             return ""
 
-    def send_message(self, user_content: str) -> str:
+    def send_message(self, user_content: str) -> Iterator[str]:
         self.messages.append({"role": "user", "content": user_content})
 
         MAX_ITERATIONS = 15
         for _ in range(MAX_ITERATIONS):
-            # print("Iteration")  # Debug log to track iterations
-
             request_payload = {
                 "model": self.model,
                 "messages": self.messages,
@@ -90,19 +89,14 @@ class LocalLLMClient:
                         if "tool_calls" in msg_chunk:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
             
-            if accumulated_message["content"]:
-                print()  # Move to the next line after streaming the assistant's response
-
             if "tool_calls" not in accumulated_message:
                 self.messages.append(accumulated_message)
-                return accumulated_message.get("content", "")
+                return
 
             self.messages.append(accumulated_message)
 
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
-
-                # print(f"Tool call detected: {func_name}")  # Debug log for tool calls
 
                 if hasattr(self.tools_instance, func_name):
                     func = getattr(self.tools_instance, func_name)
@@ -119,8 +113,6 @@ class LocalLLMClient:
                     except Exception as e:
                         result = f"Execution error for {func_name}: {e}"
                     
-                    # print(f"Tool '{func_name}' executed with result: {result}")  # Debug log for tool execution result
-
                     self.messages.append({
                         "role": "tool",
                         "content": str(result),
@@ -131,4 +123,5 @@ class LocalLLMClient:
                         "content": f"Error: the tool {func_name} doesn't exit.",
                     })
 
-        return "Error: Maximum iterations reached without final response."
+        yield "\nError: Maximum iterations reached without final response."
+        return
