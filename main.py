@@ -1,5 +1,10 @@
-import requests
 import argparse
+
+import sys
+import json
+from pathlib import Path
+
+import requests
 from client import LocalLLMClient
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,19 +39,92 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Désactive le mode de réflexion (thinking) du modèle"
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Liste toutes les sessions sauvegardées",
+    )
+    parser.add_argument(
+        "--resume",
+        nargs="?",
+        const="LAST",
+        default=None,
+        help="Chemin vers le fichier JSON pour sauvegarder/charger l'historique. Sans arguments, reprends la dernière session."
+    )
 
     return parser
 
+def list_sessions():
+    """Affiche toutes tles sessions disponibles dans ./historique/"""
+    sessions_dir = Path("./historique")
+    if not sessions_dir.exists():
+        print("Erreur: Dossier introuvable.")
+        return
+    
+    files = sorted(list(sessions_dir.glob("*.json")))
+    if not files:
+        print("Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée.")
+        return
+    
+    print(f"\n{'Fichier':<25} | {'Modèle':<15} | {'Titre'}")
+    print("-" * 70)
+    for f in files:
+        try:
+            with open(f, "r", encoding="utf-8") as file:
+                data = json.load(file)
+                meta = data.get("metadata", {})
+                title = data.get("title", "Sans titre")
+                model = meta.get("model", "inconnu")
+                display_title = (title[:40] + '..') if len(title) > 40 else title
+                print(f"{f.name:<25} | {model:<15} | {display_title}")
+        except Exception:
+            print(f"{f.name:<25} | /!\\ Fichier Corrompu")
+    print()
+
+def find_session_file(target: str) -> str:
+    """Trouve le fichier correspondant (dernier modifié, ou par nom)."""
+    sessions_dir = Path("./historique")
+    if not sessions_dir.exists():
+        return None
+
+    files = list(sessions_dir.glob("*.json"))
+    if not files:
+        return None
+
+    if target == "LAST":
+        latest_file = max(files, key=lambda p: p.stat().st_mtime)
+        return latest_file.name
+    
+    for f in files:
+        if target in f.name:
+            return f.name
+
+    return None
 
 def main():
     args = build_parser().parse_args()
+
+    if args.list:
+        list_sessions()
+        sys.exit(0)
+
+    session_file_to_load = None
+    if args.resume:
+        session_file_to_load = find_session_file(args.resume)
+        if not session_file_to_load:
+            print(f"Impossible de trouver une session correspondant à '{args.resume}'")
+            sys.exit(1)
+
     client = LocalLLMClient(
         model_name=args.model,
         base_url=args.url,
         sys_prompt_path=args.sys_prompt,
         max_iterations=args.max_iterations,
         disable_thinking=args.disable_thinking,
+        session_file=session_file_to_load
     )
+
+    print("Tapez 'quit' ou 'exit' pour quitter.\n")
 
     while True:
         try:

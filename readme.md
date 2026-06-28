@@ -57,16 +57,16 @@ Ce projet est conçu de manière itérative, voici les étapes approximatives de
 - Boucle ReAct: enchaîner plusieurs tool calls jusqu'à la réponse finale ✅
 - Deeper Internet search ✅
 - Maîtrise du mode thinking: comprendre, exploiter ou désactiver le \<think\> de Qwen3.5 ✅
-- Gestion du contexte qui grandit: troncature, résumé ou archivage des vieux tours pour ne pas exploser la fenêtre
 - Streaming des réponses: afficher les tokens au fur et à mesure (ergonomie) ✅
-- Multimodalité - images
 - Arguments pour charger un modèle, un system prompt, une URL, un nombre maximum d'itérations ✅
 - Arguments pour désactiver le mode thinking ✅
 
 ### Phase 3 - Montée de niveau
 - Migration vers le SDKOpenAI
 - Persistance des conversations
+- Gestion du contexte qui grandit: troncature, résumé ou archivage des vieux tours pour ne pas exploser la fenêtre
 - Mémoire long terme avec embeddings
+- Multimodalité - images
 - Audio (speech-to-text)
 
 ### Phase 4 - Framework d'agents
