@@ -14,10 +14,12 @@ class LocalLLMClient:
             model_name="qwen3.5:9b",
             base_url="http://localhost:11434/api/chat",
             sys_prompt_path='system_prompt.txt',
-            max_iterations=15):
+            max_iterations=15,
+            disable_thinking=False):
         self.model = model_name
         self.url = base_url
         self.max_iterations = max_iterations
+        self.disable_thinking = disable_thinking
 
         system_prompt = self._read_system_prompt(sys_prompt_path)
         if not system_prompt:
@@ -69,8 +71,10 @@ class LocalLLMClient:
                 "model": self.model,
                 "messages": self.messages,
                 "stream": True,
-                "tools": self.tools_schema
+                "tools": self.tools_schema,
             }
+            if self.disable_thinking:
+                request_payload["think"] = False
 
             response = requests.post(self.url, json=request_payload)
             response.raise_for_status()
@@ -83,7 +87,6 @@ class LocalLLMClient:
             for line in response.iter_lines(decode_unicode=True):
                 if line:
                     chunk = json.loads(line)
-                    # print(json.dumps(chunk, indent=2, ensure_ascii=False))
                     if "message" in chunk:
                         msg_chunk = chunk["message"]
 

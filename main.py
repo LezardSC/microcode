@@ -2,7 +2,7 @@ import requests
 import argparse
 from client import LocalLLMClient
 
-def parser() -> argparse.ArgumentParser:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")
 
     parser.add_argument(
@@ -29,17 +29,23 @@ def parser() -> argparse.ArgumentParser:
         default=15,
         help="Nombre maximum d'itérations pour les outils (défault: 15)"
     )
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Désactive le mode de réflexion (thinking) du modèle"
+    )
 
     return parser
 
 
 def main():
-    args = parser().parse_args()
+    args = build_parser().parse_args()
     client = LocalLLMClient(
         model_name=args.model,
         base_url=args.url,
         sys_prompt_path=args.sys_prompt,
-        max_iterations=args.max_iterations
+        max_iterations=args.max_iterations,
+        disable_thinking=args.disable_thinking,
     )
 
     while True:
