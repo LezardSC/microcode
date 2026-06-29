@@ -67,7 +67,7 @@ Ce projet est conçu de manière itérative, voici les étapes approximatives de
 - config.toml pour charger des configurations par défaut
 
 ### Phase 3 - Montée de niveau
-- Persistance des conversations
+- Persistance des conversations ✅
 - Gestion du contexte qui grandit: troncature, résumé ou archivage des vieux tours pour ne pas exploser la fenêtre
 - Mémoire long terme avec embeddings
 - Tool exécuteur de code
