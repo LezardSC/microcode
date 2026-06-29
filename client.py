@@ -72,7 +72,7 @@ class LocalLLMClient:
     
     def _save_session(self):
         """Sauvegarde la session (métadonnées + messages)."""
-        self.metadata["updated_at"] = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+        self.metadata["updated_at"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         data = {
             "metadata": self.metadata,
             "messages": self.messages
@@ -84,11 +84,14 @@ class LocalLLMClient:
         """Génère un titre stocké dans les métadonnées"""
         payload = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": "Génère un titre ultra court (2 à 6 mots) qui résume ce prompt. Ne renvoie QUE le titre."},
+            "messages": [{
+                    "role": "system",
+                    "content": "Génère un titre ultra court (2 à 6 mots) qui résume ce prompt. Ne renvoie QUE le titre."
+                },
                 {"role": "user", "content": first_prompt}
             ],
-            "stream": False
+            "think": False,
+            "stream": False,
         }
         try:
             response = requests.post(self.url, json=payload)
