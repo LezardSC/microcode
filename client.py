@@ -190,7 +190,7 @@ class LocalLLMClient:
                         if "tool_calls" in msg_chunk:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
             
-            if "tool_calls" not in accumulated_message:
+            if "tool_calls" not in accumulated_message and accumulated_message["content"].strip():
                 self.messages.append(accumulated_message)
                 self._save_session()
                 return
