@@ -30,8 +30,8 @@ class LocalLLMClient:
 
         self.metadata = {
             "model": self.model,
-            "created_at": datetime.now().strftime("%Y-%m-%dT%H-%M-%S"),
-            "updated_at": datetime.now().strftime("%Y-%m-%dT%H-%M-%S"),
+            "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
             "system_prompt": "",
             "title": "Nouvelle conversation"
         }
@@ -93,9 +93,30 @@ class LocalLLMClient:
         try:
             response = requests.post(self.url, json=payload)
             response.raise_for_status()
-            title = response.json()["message"]["content"].strip()
-            self.metadata["title"] = re.sub(r'[\n\r"]+', '', title)
-        except Exception:
+            raw_title = response.json()["message"]["content"].strip()
+            clean_title = re.sub(r'[\n\r"]+', '', raw_title)
+            self.metadata["title"] = clean_title
+
+            safe_filename = re.sub(r'[^\w\s-]', '', clean_title).strip().lower()
+            safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
+
+            if not safe_filename:
+                safe_filename = "conversation_sans_titre"
+            
+            new_path = self.session_dir / f"{safe_filename}.json"
+
+            counter = 1
+            while new_path.exists():
+                new_path = self.session_dir / f"{safe_filename}_{counter}.json"
+                counter += 1
+            
+            if self.session_path.exists():
+                self.session_path.rename(new_path)
+            
+            self.session_path = new_path
+
+        except Exception as e:
+            print(f"\n[Warning: Impossible de générer le titre -> {e}]")
             self.metadata["title"] = "Conversation sans titre"
     
     def _read_system_prompt(self, path: str) -> str:
@@ -168,6 +189,7 @@ class LocalLLMClient:
             
             if "tool_calls" not in accumulated_message:
                 self.messages.append(accumulated_message)
+                self._save_session()
                 return
 
             self.messages.append(accumulated_message)
@@ -200,7 +222,6 @@ class LocalLLMClient:
                         "content": f"Error: the tool {func_name} doesn't exit.",
                     })
 
-            self._save_session()
-
+        self._save_session()
         yield "\nError: Maximum iterations reached without final response."
         return

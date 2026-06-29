@@ -73,7 +73,7 @@ def list_sessions():
             with open(f, "r", encoding="utf-8") as file:
                 data = json.load(file)
                 meta = data.get("metadata", {})
-                title = data.get("title", "Sans titre")
+                title = meta.get("title", "Sans titre")
                 model = meta.get("model", "inconnu")
                 display_title = (title[:40] + '..') if len(title) > 40 else title
                 print(f"{f.name:<25} | {model:<15} | {display_title}")
