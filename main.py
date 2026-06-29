@@ -83,7 +83,7 @@ def list_sessions():
                 model = meta.get("model", "inconnu")
 
                 display_title = (title[:40] + '..') if len(title) > 40 else title
-                print(f"{f.name:<25} | {model:<15} | {display_title}")
+                print(f"{idx:<3} | {f.name:<25} | {model:<15} | {display_title}")
         except Exception:
             print(f"{f.name:<25} | /!\\ Fichier Corrompu")
     print()
@@ -115,8 +115,43 @@ def find_session_file(target: str) -> str:
 
     return None
 
+def clear_session(target: str):
+    """Gère la suppression des sessions."""
+    sessions_dir = Path("./historique")
+    if not sessions_dir.exists():
+        print("Aucun dossier d'historique à nettoyer")
+        return
+    
+    if target.lower() == "all":
+        files = list(sessions_dir.glob("*.json"))
+        if not files:
+            print("L'historique est déjà vide.")
+            return
+        
+        confirm = input(f"Êtes-vous sûr de vouloir supprimer toutes les sessions ({len(files)} fichiers) ? [Y/n]:\n")
+        if confirm.lower() == 'y':
+            for f in files:
+                f.unlink()
+            print("Toutes les sessions ont été supprimées.")
+        else:
+            print("Suppression annulée.")
+        return
+    
+    file_to_delete = find_session_file(target)
+
+    if file_to_delete:
+        target_path = sessions_dir / file_to_delete
+        target_path.unlink()
+        print(f"Session ' {file_to_delete}' supprimée avec succès.")
+    else:
+        print(f"Impossible de trouver la session correspondant à '{target}'.")
+
 def main():
     args = build_parser().parse_args()
+
+    if args.clear:
+        clear_session(args.clear)
+        sys.exit(0)
 
     if args.list:
         list_sessions()
