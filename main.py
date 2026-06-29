@@ -51,6 +51,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Chemin vers le fichier JSON pour sauvegarder/charger l'historique. Sans arguments, reprends la dernière session."
     )
+    parser.add_argument(
+        "--clear",
+        type=str,
+        help="Supprime une session par son index ou son nom, ou tapez 'all' pour tout supprimer"
+    )
 
     return parser
 
@@ -66,15 +71,17 @@ def list_sessions():
         print("Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée.")
         return
     
-    print(f"\n{'Fichier':<25} | {'Modèle':<15} | {'Titre'}")
-    print("-" * 70)
-    for f in files:
+    print(f"\n{'ID':<3} | {'Fichier':<25} | {'Modèle':<15} | {'Titre'}")
+    print("-" * 75)
+
+    for idx, f in enumerate(files, start=1):
         try:
             with open(f, "r", encoding="utf-8") as file:
                 data = json.load(file)
                 meta = data.get("metadata", {})
                 title = meta.get("title", "Sans titre")
                 model = meta.get("model", "inconnu")
+
                 display_title = (title[:40] + '..') if len(title) > 40 else title
                 print(f"{f.name:<25} | {model:<15} | {display_title}")
         except Exception:
@@ -87,13 +94,20 @@ def find_session_file(target: str) -> str:
     if not sessions_dir.exists():
         return None
 
-    files = list(sessions_dir.glob("*.json"))
+    files = sorted(list(sessions_dir.glob("*.json")))
     if not files:
         return None
 
     if target == "LAST":
         latest_file = max(files, key=lambda p: p.stat().st_mtime)
         return latest_file.name
+    
+    if target.isdigit():
+        idx = int(target)
+        if 1 <= idx <= len(files):
+            return files[idx - 1].name
+        else:
+            return None
     
     for f in files:
         if target in f.name:
