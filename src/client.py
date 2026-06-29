@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Iterator
 from datetime import datetime
 
-from tools import Tools
+from src.tools import Tools
 
 DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. Réponds de manière concise et précise. Si tu ne connais pas la réponse, dis que tu ne sais pas plutôt que d'inventer une réponse."
 
