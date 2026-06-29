@@ -158,8 +158,6 @@ class LocalLLMClient:
         if len(self.messages) == 2 and self.metadata.get("title") == "Nouvelle conversation":
             self._generate_title(user_content)
         
-        empty_response_count = 0
-        MAX_EMPTY_RESPONSES = 2
         for _ in range(self.max_iterations):
             request_payload = {
                 "model": self.model,
@@ -192,15 +190,6 @@ class LocalLLMClient:
                         if "tool_calls" in msg_chunk:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
             
-            if not accumulated_message.get("content", "").strip() and "tool_calls" not in accumulated_message:
-                empty_response_count += 1
-                if empty_response_count >= MAX_EMPTY_RESPONSES:
-                    yield "\n[L'agent n'a pas produit de réponse après plusieurs essais. Veuillez réessayer.]"
-                    self._save_session()
-                    return
-                self.messages.append({"role": "system", "content": "Tu n'as pas répondu. Essaie de donner une réponse maintenant."})
-                continue
-
             if "tool_calls" not in accumulated_message and accumulated_message["content"].strip():
                 self.messages.append(accumulated_message)
                 self._save_session()
