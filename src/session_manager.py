@@ -2,6 +2,8 @@ from pathlib import Path
 import json
 from datetime import datetime
 from prompt_toolkit import PromptSession
+from rich.console import Console
+from rich.table import Table
 
 from utils.find_session_file import find_session_file
 
@@ -52,19 +54,24 @@ class SessionManager:
 
     @staticmethod
     def list():
-        """Affiche toutes tles sessions disponibles dans ./historique/"""
+        """Affiche toutes les sessions disponibles dans ./historique/"""
+        console = Console()
+
         sessions_dir = Path("./historique")
         if not sessions_dir.exists():
-            print("Erreur: Dossier introuvable.")
+            print("[yellow]Erreur: Dossier introuvable.[/yellow]")
             return
         
         files = sorted(list(sessions_dir.glob("*.json")))
         if not files:
-            print("Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée.")
+            print("[yellow]Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée.![/yellow]")
             return
         
-        print(f"\n{'ID':<3} | {'Fichier':<25} | {'Modèle':<15} | {'Titre'}")
-        print("-" * 75)
+        table = Table(title="Historique des Conversations", title_style="bold blue")
+        table.add_column("ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Fichier", style="magenta")
+        table.add_column("Modèle", style="green")
+        table.add_column("Titre", style="white")
 
         for idx, f in enumerate(files, start=1):
             try:
@@ -75,9 +82,10 @@ class SessionManager:
                     model = meta.get("model", "inconnu")
 
                     display_title = (title[:40] + '..') if len(title) > 40 else title
-                    print(f"{idx:<3} | {f.name:<25} | {model:<15} | {display_title}")
+                    table.add_row(str(idx), f.name, model, display_title)
             except Exception:
-                print(f"{f.name:<25} | /!\\ Fichier Corrompu")
+                table.add_row(str(idx), f.name, "---", "[red]/!\\ Fichier Corrompu[/red]")
+        console.print(table)
         print()
     
     @staticmethod

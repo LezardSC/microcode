@@ -4,6 +4,11 @@ import requests
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.validation import Validator, ValidationError
+from rich.console import Console
+from rich.table import Table
+from rich.markdown import Markdown
+from rich.live import Live
+from rich.panel import Panel
 
 from client import LocalLLMClient
 from session_manager import SessionManager
