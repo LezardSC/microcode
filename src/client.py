@@ -30,16 +30,16 @@ class LocalLLMClient:
         self.tools_schema = Tools.generate_schema()
         self.title_generator = TitleGenerator(self.model, self.url)
 
-        self.session_dir = Path("./historique")
-        self.session_dir.mkdir(exist_ok=True)
+        session_dir = Path("./historique")
+        session_dir.mkdir(exist_ok=True)
 
         if session_file:
-            self.session_path = self.session_dir / session_file
+            session_path = session_dir / session_file
         else:
             created_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-            self.session_path = self.session_dir / f"{created_at}.json"
+            session_path = session_dir / f"{created_at}.json"
         
-        self.session = SessionManager(self.session_path, self.model)
+        self.session = SessionManager(session_path, self.model)
 
         if session_file:
             self.session.load()
@@ -96,25 +96,7 @@ class LocalLLMClient:
             print(f"Error: Cannot decode system prompt from '{path}': {e}.")
             return ""
     
-    def _rename_session_file(self, title: str):
-        safe_filename = re.sub(r'[^\w\s-]', '', title).strip().lower()
-        safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
 
-        if not safe_filename:
-            safe_filename = "conversation_sans_titre"
-        
-        new_path = self.session_dir / f"{safe_filename}.json"
-
-        counter = 1
-        while new_path.exists():
-            new_path = self.session_dir / f"{safe_filename}_{counter}.json"
-            counter += 1
-        
-        if self.session_path.exists():
-            self.session_path.rename(new_path)
-        
-        self.session.session_path = new_path
-        self.session_path = new_path
 
 
     def send_message(self, user_content: str) -> Iterator[str]:
@@ -124,10 +106,9 @@ class LocalLLMClient:
             try:
                 title= self.title_generator.generate(user_content)
                 self.session.metadata["title"] = title
-                self._rename_session_file(title)
+                self.session.rename(title)
             except Exception as e:
                 print(f"\n[Warning: Impossible de générer le titre -> {e}]")
-                pass
 
         for _ in range(self.max_iterations):
             request_payload = {
@@ -162,11 +143,18 @@ class LocalLLMClient:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
             
             if "tool_calls" not in accumulated_message and accumulated_message["content"].strip():
-                self.messages.append(accumulated_message)
+                self.session.add_message(
+                    "assistant",
+                    accumulated_message.get("content", ""),
+                )
                 self.session.save()
                 return
 
-            self.session.append_message(accumulated_message)
+            self.session.add_message(
+                "assistant",
+                accumulated_message["content"],
+                extra={"tool_calls": accumulated_message["tool_calls"]}
+            )
 
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]

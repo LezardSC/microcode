@@ -117,8 +117,6 @@ def run_chat(client: LocalLLMClient):
                 console.print("\n[bold cyan]End of conversation.[/bold cyan]")
                 break
 
-            assistant_reply = client.send_message(content)
-
             console.print(f"\n[bold blue]Assistant:[/bold blue]\n")
 
             stream = client.send_message(content)
@@ -127,7 +125,7 @@ def run_chat(client: LocalLLMClient):
 
             full_response = first_fragment
             with Live(Markdown(""), console=console, refresh_per_second=15) as live:
-                for text_fragment in assistant_reply:
+                for text_fragment in stream:
                     full_response += text_fragment
                     live.update(Markdown(full_response))
             print()
