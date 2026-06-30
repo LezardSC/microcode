@@ -1,7 +1,9 @@
 from pathlib import Path
 import json
-from utils.find_session_file import find_session_file
 from datetime import datetime
+from prompt_toolkit import PromptSession
+
+from utils.find_session_file import find_session_file
 
 class SessionManager:
     def __init__(self, session_path: Path, model: str = "qwen3.5:9b"):
@@ -92,7 +94,8 @@ class SessionManager:
                 print("L'historique est déjà vide.")
                 return
             
-            confirm = input(f"Êtes-vous sûr de vouloir supprimer toutes les sessions ({len(files)} fichiers) ? [Y/n]:\n")
+            prompt_session = PromptSession()
+            confirm = prompt_session.prompt(f"Êtes-vous sûr de vouloir supprimer toutes les sessions ({len(files)} fichiers) ? [Y/n]:\n")
             if confirm.lower() == 'y':
                 for f in files:
                     f.unlink()
