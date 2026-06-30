@@ -120,7 +120,12 @@ def run_chat(client: LocalLLMClient):
             assistant_reply = client.send_message(content)
 
             console.print(f"\n[bold blue]Assistant:[/bold blue]\n")
-            full_response = ""
+
+            stream = client.send_message(content)
+            with console.status("[bold green]Le modèle réfléchit...", spinner="dots"):
+                first_fragment = next(stream)
+
+            full_response = first_fragment
             with Live(Markdown(""), console=console, refresh_per_second=15) as live:
                 for text_fragment in assistant_reply:
                     full_response += text_fragment
