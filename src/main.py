@@ -1,9 +1,9 @@
 import argparse
 import sys
 import requests
-from src.client import LocalLLMClient
-from src.session_manager import SessionManager
-from src.utils.find_session_file import find_session_file
+from client import LocalLLMClient
+from session_manager import SessionManager
+from utils.find_session_file import find_session_file
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")

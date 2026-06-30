@@ -1,8 +1,53 @@
 from pathlib import Path
 import json
-from src.utils.find_session_file import find_session_file
+from utils.find_session_file import find_session_file
+from datetime import datetime
 
 class SessionManager:
+    def __init__(self, session_path: Path, model: str = "qwen3.5:9b"):
+        self.session_path = Path(session_path)
+        self.model = model
+        self.metadata = {
+            "model": self.model,
+            "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+            "system_prompt": "",
+            "title": "Nouvelle conversation"
+        }
+        self.messages = []
+    
+    def load(self):
+        """Charge une session existante incluant métadonnées et messages."""
+        if self.session_path.exists():
+            with open(self.session_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+                self.metadata = data.get("metadata", self.metadata)
+                self.messages = data.get("messages", [])
+
+                print(f"Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})")
+
+    def append_message(self, message):
+        self.messages.append(message)
+
+    def save(self):
+        """Sauvegarde la session (métadonnées + messages)."""
+        self.metadata["updated_at"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+        data = {
+            "metadata": self.metadata,
+            "messages": self.messages
+        }
+        
+        with open(self.session_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def add_message(self, role, content, extra=None):
+        msg = {"role": role, "content": content}
+        if extra:
+            msg.update(extra)
+        self.messages.append(msg)
+
     @staticmethod
     def list():
         """Affiche toutes tles sessions disponibles dans ./historique/"""
@@ -64,3 +109,4 @@ class SessionManager:
             print(f"Session ' {file_to_delete}' supprimée avec succès.")
         else:
             print(f"Impossible de trouver la session correspondant à '{target}'.")
+    
