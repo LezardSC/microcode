@@ -5,10 +5,9 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.validation import Validator, ValidationError
 from rich.console import Console
-from rich.table import Table
-from rich.markdown import Markdown
-from rich.live import Live
 from rich.panel import Panel
+from rich.live import Live
+from rich.markdown import Markdown
 
 from client import LocalLLMClient
 from session_manager import SessionManager
@@ -116,12 +115,16 @@ def run_chat(client: LocalLLMClient):
 
             if content.lower() in ["quit", "exit"]:
                 console.print("\n[bold cyan]End of conversation.[/bold cyan]")
+                break
 
             assistant_reply = client.send_message(content)
 
             console.print(f"\n[bold blue]Assistant:[/bold blue]\n")
-            for text_fragment in assistant_reply:
-                print(text_fragment, end="", flush=True)
+            full_response = ""
+            with Live(Markdown(""), console=console, refresh_per_second=15) as live:
+                for text_fragment in assistant_reply:
+                    full_response += text_fragment
+                    live.update(Markdown(full_response))
             print()
 
         except requests.exceptions.RequestException as e:
