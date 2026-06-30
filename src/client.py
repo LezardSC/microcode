@@ -150,11 +150,18 @@ class LocalLLMClient:
                 self.session.save()
                 return
 
+            extra = {}
+            if "tool_calls" in accumulated_message:
+                extra["tool_calls"] = accumulated_message["tool_calls"]
+
             self.session.add_message(
                 "assistant",
-                accumulated_message["content"],
-                extra={"tool_calls": accumulated_message["tool_calls"]}
+                accumulated_message.get("content", ""),
+                extra=extra or None
             )
+
+            if "tool_calls" not in accumulated_message:
+                continue
 
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
