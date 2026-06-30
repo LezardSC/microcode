@@ -1,6 +1,10 @@
 import argparse
 import sys
 import requests
+from prompt_toolkit import PromptSession
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.validation import Validator, ValidationError
+
 from client import LocalLLMClient
 from session_manager import SessionManager
 from utils.find_session_file import find_session_file
@@ -57,19 +61,53 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
+class NonEmptyValidator(Validator):
+    def validate(self, document):
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(
+                message="Le message ne peut pas être vide",
+                cursor_position=0
+            )
+
+def setup_key_bindings() -> KeyBindings:
+    """Configure et retourne les raccourcis clavier pour prompt_toolkit."""
+    bindings = KeyBindings()
+
+    # Alt + entrée (ou Esc puis Entrée) pour aller à la ligne
+    @bindings.add('escape', 'enter')
+    def _(event):
+        event.current_buffer.insert_text('\n')
+
+    # Entrée pour valider et envoyer
+    @bindings.add('enter')
+    def _(event):
+        event.current_buffer.validate_and_handle()   
+
+    # Ctrl+Z pour Annuler
+    @bindings.add('c-z')
+    def _(event):
+        event.current_buffer.undo()
+    
+    return bindings
+
 def run_chat(client: LocalLLMClient):
     print("Tapez 'quit' ou 'exit' pour quitter.\n")
 
+    prompt_session = PromptSession(
+        key_bindings=setup_key_bindings(),
+        validator=NonEmptyValidator(),
+        validate_while_typing=False,
+        multiline=True
+    )
+
     while True:
         try:
-            content = input("Vous: ")
+            content = prompt_session.prompt("\nVous: ")
 
             if content.lower() in ["quit", "exit"]:
                 print("\nEnd of conversation.")
                 break
-
-            if not content.strip():
-                continue
 
             assistant_reply = client.send_message(content)
 
