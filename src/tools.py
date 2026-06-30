@@ -8,7 +8,7 @@ import ast
 from ddgs import DDGS
 from bs4 import BeautifulSoup
 
-from src.utils.math_eval import evaluate_ast
+from utils.math_eval import evaluate_ast
 
 class Tools:
     def fetch_url(self, url: str) -> str:

@@ -1,11 +1,13 @@
 import requests
-import json
 import re
+import json
 from pathlib import Path
 from typing import Iterator
 from datetime import datetime
 
-from src.tools import Tools
+from session_manager import SessionManager
+from title_generator import TitleGenerator
+from tools import Tools
 
 DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. Réponds de manière concise et précise. Si tu ne connais pas la réponse, dis que tu ne sais pas plutôt que d'inventer une réponse."
 
@@ -24,41 +26,35 @@ class LocalLLMClient:
         self.max_iterations = max_iterations
         self.disable_thinking = disable_thinking
 
-        self.messages = []
         self.tools_instance = Tools()
         self.tools_schema = Tools.generate_schema()
-
-        self.metadata = {
-            "model": self.model,
-            "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-            "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-            "system_prompt": "",
-            "title": "Nouvelle conversation"
-        }
+        self.title_generator = TitleGenerator(self.model, self.url)
 
         self.session_dir = Path("./historique")
         self.session_dir.mkdir(exist_ok=True)
 
         if session_file:
             self.session_path = self.session_dir / session_file
-            self._load_session(sys_prompt_path)
         else:
-            filename = f"{self.metadata['created_at']}.json"
-            self.session_path = self.session_dir / filename
-            self._init_system_prompt(sys_prompt_path)
+            created_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            self.session_path = self.session_dir / f"{created_at}.json"
+        
+        self.session = SessionManager(self.session_path, self.model)
 
-    def _load_session(self, sys_prompt_path):
-        """Charge une session existante incluant métadonnées et messages."""
-        if self.session_path.exists():
-            try:
-                with open(self.session_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.metadata = data.get("metadata", self.metadata)
-                    self.messages = data.get("messages", [])
-                    print(f"Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})")
-            except Exception as e:
-                print(f"Erreur lors du chargement de la session: {e}")
-                self._init_system_prompt(sys_prompt_path)
+        if session_file:
+            self.session.load()
+        else:
+            self._init_system_prompt(sys_prompt_path)
+    
+    @property
+    def messages(self):
+        """Permet un appel moins verbeux aux messages"""
+        return self.session.messages
+    
+    @property
+    def metadata(self):
+        """Raccourci pour accéder aux métadonnées de la session"""
+        return self.session.metadata
     
     def _init_system_prompt(self, sys_prompt_path):
         """Génère le prompt système initial."""
@@ -66,61 +62,9 @@ class LocalLLMClient:
         if not system_prompt:
             system_prompt = DEFAULT_SYS_PROMPT
 
-        self.metadata["system_prompt"] = system_prompt    
-        self.messages = [{"role": "system", "content": system_prompt}]
-        self._save_session()
-    
-    def _save_session(self):
-        """Sauvegarde la session (métadonnées + messages)."""
-        self.metadata["updated_at"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        data = {
-            "metadata": self.metadata,
-            "messages": self.messages
-        }
-        with open(self.session_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    
-    def _generate_title(self, first_prompt: str):
-        """Génère un titre stocké dans les métadonnées"""
-        payload = {
-            "model": self.model,
-            "messages": [{
-                    "role": "system",
-                    "content": "Génère un titre ultra court (2 à 6 mots) qui résume ce prompt. Ne renvoie QUE le titre."
-                },
-                {"role": "user", "content": first_prompt}
-            ],
-            "think": False,
-            "stream": False,
-        }
-        try:
-            response = requests.post(self.url, json=payload)
-            response.raise_for_status()
-            raw_title = response.json()["message"]["content"].strip()
-            clean_title = re.sub(r'[\n\r"]+', '', raw_title)
-            self.metadata["title"] = clean_title
-
-            safe_filename = re.sub(r'[^\w\s-]', '', clean_title).strip().lower()
-            safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
-
-            if not safe_filename:
-                safe_filename = "conversation_sans_titre"
-            
-            new_path = self.session_dir / f"{safe_filename}.json"
-
-            counter = 1
-            while new_path.exists():
-                new_path = self.session_dir / f"{safe_filename}_{counter}.json"
-                counter += 1
-            
-            if self.session_path.exists():
-                self.session_path.rename(new_path)
-            
-            self.session_path = new_path
-
-        except Exception as e:
-            print(f"\n[Warning: Impossible de générer le titre -> {e}]")
-            self.metadata["title"] = "Conversation sans titre"
+        self.session.metadata["system_prompt"] = system_prompt    
+        self.session.messages = [{"role": "system", "content": system_prompt}]
+        self.session.save()
     
     def _read_system_prompt(self, path: str) -> str:
         max_bytes = 50_000
@@ -151,13 +95,40 @@ class LocalLLMClient:
         except Exception as e:
             print(f"Error: Cannot decode system prompt from '{path}': {e}.")
             return ""
+    
+    def _rename_session_file(self, title: str):
+        safe_filename = re.sub(r'[^\w\s-]', '', title).strip().lower()
+        safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
+
+        if not safe_filename:
+            safe_filename = "conversation_sans_titre"
+        
+        new_path = self.session_dir / f"{safe_filename}.json"
+
+        counter = 1
+        while new_path.exists():
+            new_path = self.session_dir / f"{safe_filename}_{counter}.json"
+            counter += 1
+        
+        if self.session_path.exists():
+            self.session_path.rename(new_path)
+        
+        self.session.session_path = new_path
+        self.session_path = new_path
+
 
     def send_message(self, user_content: str) -> Iterator[str]:
-        self.messages.append({"role": "user", "content": user_content})
+        self.session.add_message("user", user_content)
 
         if len(self.messages) == 2 and self.metadata.get("title") == "Nouvelle conversation":
-            self._generate_title(user_content)
-        
+            try:
+                title= self.title_generator.generate(user_content)
+                self.session.metadata["title"] = title
+                self._rename_session_file(title)
+            except Exception as e:
+                print(f"\n[Warning: Impossible de générer le titre -> {e}]")
+                pass
+
         for _ in range(self.max_iterations):
             request_payload = {
                 "model": self.model,
@@ -192,10 +163,10 @@ class LocalLLMClient:
             
             if "tool_calls" not in accumulated_message and accumulated_message["content"].strip():
                 self.messages.append(accumulated_message)
-                self._save_session()
+                self.session.save()
                 return
 
-            self.messages.append(accumulated_message)
+            self.session.append_message(accumulated_message)
 
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
@@ -215,16 +186,10 @@ class LocalLLMClient:
                     except Exception as e:
                         result = f"Execution error for {func_name}: {e}"
                     
-                    self.messages.append({
-                        "role": "tool",
-                        "content": str(result),
-                    })
+                    self.session.add_message("tool", str(result)) 
                 else:
-                    self.messages.append({
-                        "role": "tool",
-                        "content": f"Error: the tool {func_name} doesn't exit.",
-                    })
+                    self.session.add_message("tool", f"Error: the tool {func_name} doesn't exist.")
 
-        self._save_session()
+        self.session.save()
         yield "\nError: Maximum iterations reached without final response."
         return
