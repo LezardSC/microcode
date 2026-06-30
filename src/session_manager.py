@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import json
 from datetime import datetime
 from prompt_toolkit import PromptSession
@@ -32,9 +33,6 @@ class SessionManager:
                 self.messages = data.get("messages", [])
 
                 console.print(f"[bold cyan]Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})[/bold cyan]")
-
-    def append_message(self, message):
-        self.messages.append(message)
 
     def save(self):
         """Sauvegarde la session (métadonnées + messages)."""
@@ -122,3 +120,21 @@ class SessionManager:
         else:
             console.print(f"[bold red]Impossible de trouver la session correspondant à '{target}'.[/bold red]")
     
+    def rename(self, title: str):
+        safe_filename = re.sub(r'[^\w\s-]', '', title).strip().lower()
+        safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
+
+        if not safe_filename:
+            safe_filename = "conversation_sans_titre"
+        
+        new_path = self.session_path.parent / f"{safe_filename}.json"
+
+        counter = 1
+        while new_path.exists():
+            new_path = self.session_path.parent / f"{safe_filename}_{counter}.json"
+            counter += 1
+        
+        if self.session_path.exists():
+            self.session_path.rename(new_path)
+        
+        self.session_path = new_path
