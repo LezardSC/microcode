@@ -31,7 +31,7 @@ class SessionManager:
                 self.metadata = data.get("metadata", self.metadata)
                 self.messages = data.get("messages", [])
 
-                print(f"Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})")
+                console.print(f"[bold cyan]Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})[/bold cyan]")
 
     def append_message(self, message):
         self.messages.append(message)
@@ -60,12 +60,12 @@ class SessionManager:
 
         sessions_dir = Path("./historique")
         if not sessions_dir.exists():
-            print("[yellow]Erreur: Dossier introuvable.[/yellow]")
+            console.print("[yellow]Erreur: Dossier introuvable.[/yellow]")
             return
         
         files = sorted(list(sessions_dir.glob("*.json")))
         if not files:
-            print("[yellow]Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée.![/yellow]")
+            console.print("[yellow]Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée ![/yellow]")
             return
         
         table = Table(title="Historique des Conversations", title_style="bold blue")
@@ -94,13 +94,13 @@ class SessionManager:
         """Gère la suppression des sessions."""
         sessions_dir = Path("./historique")
         if not sessions_dir.exists():
-            print("[yellow]Aucun dossier d'historique à nettoyer[/yellow]")
+            console.print("[yellow]Aucun dossier d'historique à nettoyer[/yellow]")
             return
         
         if target.lower() == "all":
             files = list(sessions_dir.glob("*.json"))
             if not files:
-                print("[yellow]L'historique est déjà vide.[/yellow]")
+                console.print("[yellow]L'historique est déjà vide.[/yellow]")
                 return
             
             prompt_session = PromptSession()
@@ -108,9 +108,9 @@ class SessionManager:
             if confirm.lower() == 'y':
                 for f in files:
                     f.unlink()
-                print("[bold green]Toutes les sessions ont été supprimées.[/bold green]")
+                console.print("[bold green]Toutes les sessions ont été supprimées.[/bold green]")
             else:
-                print("Suppression annulée.")
+                console.print("Suppression annulée.")
             return
         
         file_to_delete = find_session_file(target)
@@ -118,7 +118,7 @@ class SessionManager:
         if file_to_delete:
             target_path = sessions_dir / file_to_delete
             target_path.unlink()
-            print(f"[bold green]Session ' {file_to_delete}' supprimée avec succès.[/bold green]")
+            console.print(f"[bold green]Session '{file_to_delete}' supprimée avec succès.[/bold green]")
         else:
-            print(f"[bold red]Impossible de trouver la session correspondant à '{target}'.[/bold red]")
+            console.print(f"[bold red]Impossible de trouver la session correspondant à '{target}'.[/bold red]")
     

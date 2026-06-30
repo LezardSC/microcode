@@ -14,6 +14,8 @@ from client import LocalLLMClient
 from session_manager import SessionManager
 from utils.find_session_file import find_session_file
 
+console = Console()
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")
 
@@ -97,7 +99,9 @@ def setup_key_bindings() -> KeyBindings:
     return bindings
 
 def run_chat(client: LocalLLMClient):
-    print("Tapez 'quit' ou 'exit' pour quitter.\n")
+    console.print(Panel(
+        "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\nTapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter.",
+        border_style="cyan"))
 
     prompt_session = PromptSession(
         key_bindings=setup_key_bindings(),
@@ -111,20 +115,19 @@ def run_chat(client: LocalLLMClient):
             content = prompt_session.prompt("\nVous: ")
 
             if content.lower() in ["quit", "exit"]:
-                print("\nEnd of conversation.")
-                break
+                console.print("\n[bold cyan]End of conversation.[/bold cyan]")
 
             assistant_reply = client.send_message(content)
 
-            print(f"\n\nAssistant:\n")
+            console.print(f"\n[bold blue]Assistant:[/bold blue]\n")
             for text_fragment in assistant_reply:
                 print(text_fragment, end="", flush=True)
             print()
 
         except requests.exceptions.RequestException as e:
-            print(f"\nNetwork Error: Can't join the API: {e}")
+            console.print(f"\n[bold red]Network Error: Can't join the API: {e}[/bold red]")
         except  KeyboardInterrupt:
-            print("\nEnd of conversation.")
+            console.print("\n[bold cyan]End of conversation.[/bold cyan]")
             return
 
 def create_client(args) -> LocalLLMClient:
@@ -132,7 +135,7 @@ def create_client(args) -> LocalLLMClient:
     if args.resume:
         session_file_to_load = find_session_file(args.resume)
         if not session_file_to_load:
-            print(f"Impossible de trouver une session correspondant à '{args.resume}'")
+            console.print(f"[bold red]Impossible de trouver une session correspondant à '{args.resume}'[/bold red]")
             sys.exit(1)
 
     return LocalLLMClient(
