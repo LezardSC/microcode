@@ -1,109 +1,121 @@
-# Minicode - Agent Autonome Local (Ollama & Python)
+# Minicode - Local Autonomous Agent (Ollama & Python)
 
-Minicode (en référence à Opencode) est un agent LLM autonome développé de zéro en Python.
-L'objectif de ce projet est de comprendre en profondeur le fonctionnement des agents IA (Tool Calling, boucle ReAct, mémoire) en construisant tout "from scratch" avant de passer éventuellement à des frameworks plus lourds (LangGraph, CrewAI). Le projet s'appuie sur l'API locale d'**Ollama** (idéalement avec un modèle doué pour l'appel d'outils comme Qwen 2.5 / 3.5)
+Minicode (a reference to Opencode) is an autonomous LLM agent developed from scratch in Python.
+The goal of this project is to deeply understand how AI agents work (Tool Calling, ReAct loop, memory) by building everything "from scratch" before eventually moving on to heavier frameworks (LangGraph, CrewAI). The project relies on the local **Ollama** API (ideally with a model that is good at tool calling, such as Qwen 2.5 / 3.5).
 
-Je le met en public car j'ai tenté de le rendre assez modulable pour un usage par quelqu'un d'autre, et qu'au fur et à mesure de l'avancement de la roadmap, cet agent devrait être capable d'apporter une aide pour ceux ayant besoin d'un mini agent permettant des tâches simples sans avoir à payer ou brûler des tokens chez d'autres services.
+I'm making it public because I tried to make it modular enough for someone else to use, and as the roadmap progresses, this agent should be able to provide assistance to people who need a small agent for simple tasks without having to pay for or burn tokens on other services.
 
-## Fonctionnalités actuelles
+## Current Features
 
-- **Communication API directe** : Appels HTTP bruts à l'API locale d'Ollama.
-- **Introspection des outils** : Génération dynamique du schéma JSON des outils (le LLM comprend automatiquement les fonctions Python disponibles grâce à leurs *docstrings*).
-- **Boucle ReAct Autonome** : L'agent est capable d'enchaîner plusieurs appels d'outils (Tool Calling) en autonomie jusqu'à la résolution de la tâche.
-- **Outils intégrés** :
-  - `search_web` : Recherche internet rapide via DuckDuckGo.
-  - `fetch_url` : Scraping et nettoyage complet d'une page web (BeautifulSoup).
-  - `read_file` : Lecture sécurisée de fichiers locaux.
-  - `calculate` : Calculs mathématiques.
-  - `get_weather` : Recherche de la météo d'une ville ou région donnée.
-  - `search_wikipedia` : Recherche sur Wikipédia d'un sujet ou concept.
-  - `get_time` : Outil permettant à l'agent de savoir quelle heure il est en se basant sur le système.
+* **Direct API communication**: Raw HTTP calls to the local Ollama API.
+* **Tool introspection**: Dynamic generation of tool JSON schemas (the LLM automatically understands the available Python functions through their *docstrings*).
+* **Autonomous ReAct loop**: The agent is able to chain multiple tool calls autonomously until the task is resolved.
+* **Built-in tools**:
+
+  * `search_web`: Quick internet search via DuckDuckGo.
+  * `fetch_url`: Scraping and full cleaning of a web page (BeautifulSoup).
+  * `read_file`: Secure reading of local files.
+  * `calculate`: Mathematical calculations.
+  * `get_weather`: Fetching the weather for a given city or region.
+  * `search_wikipedia`: Searching Wikipedia for a given topic or concept.
+  * `get_time`: Tool allowing the agent to know the current time based on the system clock.
 
 ## 🚀 Installation
-1. **Prérequis** : Assurez-vous d'avoir [Ollama](https://ollama.com/) installé et lancé sur votre machine avec un modèle compatible (ex: `qwen2.5:14b` ou `qwen3.5:9b`).
+
+1. **Prerequisites**: Make sure [Ollama](https://ollama.com/) is installed and running on your machine with a compatible model (e.g. `qwen2.5:14b` or `qwen3.5:9b`).
+
    ```bash
    ollama pull qwen2.5:14b
-    ```
-2. **Cloner le dépôt** :
-    ```bash
-    git clone [https://github.com/lezardsc/minicode.git](https://github.com/lezardsc/minicode.git)
-    cd minicode
-    ```
-3. **Installer les dépendances** :
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
+   ```
+2. **Clone the repository**:
 
-## Utilisation
-Lancez simplement le script principal pour interagir avec l'agent dans votre terminal:
-    ```bash
+   ```bash
+   git clone [https://github.com/lezardsc/minicode.git](https://github.com/lezardsc/minicode.git)
+   cd minicode
+   ```
+3. **Install the dependencies**:
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
+Simply run the main script to interact with the agent from your terminal:
+`bash
     python3 main.py
-    ```
-
+    `
 
 ## ROADMAP
-Ce projet est conçu de manière itérative, voici les étapes approximatives de développement :
 
-### Phase 1 - les fondations
-- Appel HTTP brut à Ollama ✅
-- Historique conversationnel maintenu côté client ✅
-- Tool calling à un outil ✅
-- Multi-tools avec paramètres + génération dynamique du schéma par introspection ✅
+This project is being developed iteratively. Here are the approximate development stages:
 
-### Phase 2 - L'agent autonome
-- System prompt ✅
-- Boucle ReAct: enchaîner plusieurs tool calls jusqu'à la réponse finale ✅
-- Deeper Internet search ✅
-- Maîtrise du mode thinking: comprendre, exploiter ou désactiver le \<think\> de Qwen3.5 ✅
-- Arguments pour désactiver le mode thinking ✅
+### Phase 1 - Foundations
 
-### Phase 2.5 - Expérience utilisateur
-- Arguments pour charger un modèle, un system prompt, une URL, un nombre maximum d'itérations ✅
-- Streaming des réponses: afficher les tokens au fur et à mesure ✅
-- Meilleur input
-- Rendu Markdown et couleurs
-- config.toml pour charger des configurations par défaut
+* Raw HTTP call to Ollama ✅
+* Client-side conversation history management ✅
+* Tool calling with a single tool ✅
+* Multi-tool support with parameters + dynamic schema generation through introspection ✅
 
-### Phase 3 - Montée de niveau
-- Persistance des conversations ✅
-- Gestion du contexte qui grandit: troncature, résumé ou archivage des vieux tours pour ne pas exploser la fenêtre
-- Mémoire long terme avec embeddings
-- Tool exécuteur de code
-- Multimodalité - images
-- Audio (speech-to-text)
-- Migration vers le SDKOpenAI
+### Phase 2 - The Autonomous Agent
 
-### Phase 4 - Framework d'agents
-- Découverte d'un framework (entre LangGraph, CrewAI ou smolagents)
-- Réimplémenter mon agent actuel avec le framework
-- Comparer
+* System prompt ✅
+* ReAct loop: chaining multiple tool calls until the final answer ✅
+* Deeper Internet search ✅
+* Mastering thinking mode: understanding, using, or disabling Qwen3.5's `<think>` mode ✅
+* Arguments to disable thinking mode ✅
 
-### Phase 5 - Multi-agents
-- Premier système à deux agents
-- Pattern hiérarchique (supervisor/worker)
-- Pattern débat/consensus
-- Pattern parallèle
-- Communication structurée
-- Mini-projet personnel et fonctionnel pour tester
+### Phase 2.5 - User Experience
 
-### Phase 6 - Sujets avancés
-- MCP
-- Observabilité et logging
-- Evaluation des agents
-- Robustesse et garde-fous
-- Etude de cas: Code source d'OpenCode
-- Coût et optimisation
-- Vidéo
-- Code execution sandboxé, tool qui exécute du code dans un environnement isolé.
+* Arguments to load a model, a system prompt, a URL, and a maximum number of iterations ✅
+* Response streaming: displaying tokens as they are generated ✅
+* Better input
+* Markdown rendering and colors
+* `config.toml` for loading default configurations
 
-### Phase 7 - Projets d'application
-- Agent documentation: prend un repo, le parcourt, génère un README ou de la doc pour chaque module.
-- Agent test runner: analyse un code, génère des tests, les exécute, itère sur les échecs.
-- Agent refactoriseur: refactorise un code en justifiant chaque changement en commentaire/fichier annexe
-- Agent traducteur de code: Python -> Rust, JS -> Go, etc.
+### Phase 3 - Level Up
 
+* Conversation persistence ✅
+* Managing growing context: truncating, summarizing, or archiving old turns to avoid exceeding the context window
+* Long-term memory with embeddings
+* Code execution tool
+* Multimodality - images
+* Audio (speech-to-text)
+* Migration to the OpenAI SDK
 
+### Phase 4 - Agent Framework
 
-Ce projet est à but éducatif. N'hésitez pas à ouvrir une issue ou proposer une PR si vous souhaitez échanger sur l'architecture !
+* Exploring a framework (between LangGraph, CrewAI, or smolagents)
+* Reimplementing my current agent with the framework
+* Comparing them
+
+### Phase 5 - Multi-Agent Systems
+
+* First two-agent system
+* Hierarchical pattern (supervisor/worker)
+* Debate/consensus pattern
+* Parallel pattern
+* Structured communication
+* Personal mini-project to test it
+
+### Phase 6 - Advanced Topics
+
+* MCP
+* Observability and logging
+* Agent evaluation
+* Robustness and guardrails
+* Case study: OpenCode source code
+* Cost and optimization
+* Video
+* Sandboxed code execution, with a tool that executes code in an isolated environment.
+
+### Phase 7 - Application Projects
+
+* Documentation agent: takes a repo, goes through it, and generates a README or documentation for each module.
+* Test runner agent: analyzes code, generates tests, runs them, and iterates on failures.
+* Refactoring agent: refactors code while explaining each change in a comment/sidecar file.
+* Code translation agent: Python -> Rust, JS -> Go, etc.
+
+This project is for educational purposes. Feel free to open an issue or submit a PR if you'd like to discuss the architecture!
