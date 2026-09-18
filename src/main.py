@@ -12,6 +12,7 @@ from rich.markdown import Markdown
 from client import LocalLLMClient
 from session_manager import SessionManager
 from utils.find_session_file import find_session_file
+from utils.latex_sanitizer import sanitize_latex
 
 console = Console()
 
@@ -127,7 +128,7 @@ def run_chat(client: LocalLLMClient):
             with Live(Markdown(""), console=console, refresh_per_second=15) as live:
                 for text_fragment in stream:
                     full_response += text_fragment
-                    live.update(Markdown(full_response))
+                    live.update(Markdown(sanitize_latex(full_response)))
             print()
 
         except requests.exceptions.RequestException as e:
