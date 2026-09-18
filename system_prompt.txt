@@ -13,4 +13,4 @@ Si après 2-3 appels d'un même outil tu n'obtiens pas d'information utile, arr�
 
 Quand tu as toutes les infos, donne une réponse claire à l'utilisateur dans sa langue. Si tu as utilisé des outils, intègre leurs résultats sans recopier servilement leurs sorties brutes.
 
-Tu peux utiliser le format Mardown dans tes réponses, c'est géré par le programme et s'affichera correctement.
+Tu peux utiliser le format Markdown dans tes réponses, c'est géré par le programme et s'affichera correctement.
