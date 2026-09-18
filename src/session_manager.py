@@ -54,9 +54,9 @@ class SessionManager:
 
     @staticmethod
     def list():
-        """Affiche toutes les sessions disponibles dans ./historique/"""
+        """Affiche toutes les sessions disponibles dans ./history/"""
 
-        sessions_dir = Path("./historique")
+        sessions_dir = Path("./history")
         if not sessions_dir.exists():
             console.print("[yellow]Erreur: Dossier introuvable.[/yellow]")
             return
@@ -66,7 +66,7 @@ class SessionManager:
             console.print("[yellow]Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée ![/yellow]")
             return
         
-        table = Table(title="Historique des Conversations", title_style="bold blue")
+        table = Table(title="history des Conversations", title_style="bold blue")
         table.add_column("ID", justify="right", style="cyan", no_wrap=True)
         table.add_column("Fichier", style="magenta")
         table.add_column("Modèle", style="green")
@@ -90,15 +90,15 @@ class SessionManager:
     @staticmethod
     def clear(target: str):
         """Gère la suppression des sessions."""
-        sessions_dir = Path("./historique")
+        sessions_dir = Path("./history")
         if not sessions_dir.exists():
-            console.print("[yellow]Aucun dossier d'historique à nettoyer[/yellow]")
+            console.print("[yellow]Aucun dossier d'history à nettoyer[/yellow]")
             return
         
         if target.lower() == "all":
             files = list(sessions_dir.glob("*.json"))
             if not files:
-                console.print("[yellow]L'historique est déjà vide.[/yellow]")
+                console.print("[yellow]L'history est déjà vide.[/yellow]")
                 return
             
             prompt_session = PromptSession()

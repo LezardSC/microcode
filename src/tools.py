@@ -153,7 +153,7 @@ class Tools:
     def search_wikipedia(self, query: str) -> str:
         """
         À utiliser si l'utilisateur demande une information 
-        historique, une biographie, un fait précis ou un concept technique que tu ne connais pas.
+        history, une biographie, un fait précis ou un concept technique que tu ne connais pas.
         NE PAS utiliser pour les discussions générales, les salutations, ou si tu possèdes 
         déjà la réponse de manière certaine dans tes connaissances.
         query: Le sujet précis à rechercher, en français (même si l'utilisateur écrit 
