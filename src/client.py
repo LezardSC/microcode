@@ -134,6 +134,7 @@ class LocalLLMClient:
             accumulated_message = {
                 "role": "assistant",
                 "content": "",
+                "thinking": "",
             }
 
             for line in response.iter_lines(decode_unicode=True):
@@ -146,17 +147,24 @@ class LocalLLMClient:
                         if content_piece:
                             accumulated_message["content"] += content_piece
                             yield content_piece  # Stream the content piece to the caller
-                        
+
+                        # Qwen3.5 sometimes writes its whole answer inside the hidden
+                        # "thinking" field and never copies it to "content", leaving
+                        # nothing to show. Keep it around as a fallback for that case.
+                        accumulated_message["thinking"] += msg_chunk.get("thinking", "")
+
                         if "tool_calls" in msg_chunk:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
-            
+
             if "tool_calls" not in accumulated_message:
-                self.session.add_message(
-                    "assistant",
-                    accumulated_message.get("content", ""),
-                )
+                final_content = accumulated_message["content"]
+                if not final_content.strip() and accumulated_message["thinking"].strip():
+                    final_content = accumulated_message["thinking"]
+                    yield final_content
+
+                self.session.add_message("assistant", final_content)
                 self.session.save()
-                if not accumulated_message["content"].strip():
+                if not final_content.strip():
                     yield "\n[Le modèle n'a donné aucune réponse.]"
                 return
 
