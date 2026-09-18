@@ -116,6 +116,14 @@ class LocalLLMClient:
                 "messages": self.messages,
                 "stream": True,
                 "tools": self.tools_schema,
+                "options": {
+                    # The qwen3.5:9b Modelfile bakes in presence_penalty=1.5, which is
+                    # extreme (normal range is ~0-0.5) and actively fights against the
+                    # model reusing numbers/words already seen earlier in the conversation
+                    # (like restating a tool result). This caused empty or hallucinated
+                    # responses in longer tool-calling exchanges.
+                    "presence_penalty": 0.0,
+                },
             }
             if self.disable_thinking:
                 request_payload["think"] = False
@@ -142,26 +150,21 @@ class LocalLLMClient:
                         if "tool_calls" in msg_chunk:
                             accumulated_message["tool_calls"] = msg_chunk["tool_calls"]
             
-            if "tool_calls" not in accumulated_message and accumulated_message["content"].strip():
+            if "tool_calls" not in accumulated_message:
                 self.session.add_message(
                     "assistant",
                     accumulated_message.get("content", ""),
                 )
                 self.session.save()
+                if not accumulated_message["content"].strip():
+                    yield "\n[Le modèle n'a donné aucune réponse.]"
                 return
-
-            extra = {}
-            if "tool_calls" in accumulated_message:
-                extra["tool_calls"] = accumulated_message["tool_calls"]
 
             self.session.add_message(
                 "assistant",
                 accumulated_message.get("content", ""),
-                extra=extra or None
+                extra={"tool_calls": accumulated_message["tool_calls"]}
             )
-
-            if "tool_calls" not in accumulated_message:
-                continue
 
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
