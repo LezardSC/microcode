@@ -30,7 +30,7 @@ class LocalLLMClient:
         self.tools_schema = Tools.generate_schema()
         self.title_generator = TitleGenerator(self.model, self.url)
 
-        session_dir = Path("./historique")
+        session_dir = Path("./history")
         session_dir.mkdir(exist_ok=True)
 
         if session_file:

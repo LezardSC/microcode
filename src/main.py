@@ -58,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         const="LAST",
         default=None,
-        help="Chemin vers le fichier JSON pour sauvegarder/charger l'historique. Sans arguments, reprends la dernière session."
+        help="Chemin vers le fichier JSON pour sauvegarder/charger l'history. Sans arguments, reprends la dernière session."
     )
     parser.add_argument(
         "--clear",
