@@ -114,7 +114,7 @@ class Tools:
             # Reading the file with size limitation (500 kb)
             max_bytes = 500 * 1024
             if file_path.stat().st_size > max_bytes:
-                return f"Error: The file is too big ({file_path().stat().st_size / 1024:.1f}). The limit is 1Mb."
+                return f"Error: The file is too big ({file_path.stat().st_size / 1024:.1f} KB). The limit is 500 KB."
             
             with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
