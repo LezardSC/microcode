@@ -168,6 +168,11 @@ class LocalLLMClient:
                     yield "\n[Le modèle n'a donné aucune réponse.]"
                 return
 
+            # Keep text streamed before the tool calls apart from the next answer,
+            # otherwise the two run together in the rendered Markdown.
+            if accumulated_message["content"].strip():
+                yield "\n\n"
+
             self.session.add_message(
                 "assistant",
                 accumulated_message.get("content", ""),
