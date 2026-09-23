@@ -1,15 +1,13 @@
 import argparse
 import sys
 import requests
-from prompt_toolkit import PromptSession
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.validation import Validator, ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.live import Live
 from rich.markdown import Markdown
 
 from client import LocalLLMClient
+from input_prompt import create_prompt_session
 from session_manager import SessionManager
 from utils.find_session_file import find_session_file
 
@@ -67,53 +65,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
-class NonEmptyValidator(Validator):
-    def validate(self, document):
-        text = document.text.strip()
-        if not text:
-            raise ValidationError(
-                message="Le message ne peut pas être vide",
-                cursor_position=0
-            )
-
-def setup_key_bindings() -> KeyBindings:
-    """Configure et retourne les raccourcis clavier pour prompt_toolkit."""
-    bindings = KeyBindings()
-
-    # Alt + entrée (ou Esc puis Entrée) pour aller à la ligne
-    @bindings.add('escape', 'enter')
-    def _(event):
-        event.current_buffer.insert_text('\n')
-
-    # Entrée pour valider et envoyer
-    @bindings.add('enter')
-    def _(event):
-        event.current_buffer.validate_and_handle()   
-
-    # Ctrl+Z pour Annuler
-    @bindings.add('c-z')
-    def _(event):
-        event.current_buffer.undo()
-    
-    return bindings
-
 def run_chat(client: LocalLLMClient):
     console.print(Panel(
-        "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\nTapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter.",
+        "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\n"
+        "Tapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter "
+        "(ou Ctrl+C deux fois sur une saisie vide).",
         border_style="cyan"))
 
-    prompt_session = PromptSession(
-        key_bindings=setup_key_bindings(),
-        validator=NonEmptyValidator(),
-        validate_while_typing=False,
-        multiline=True
-    )
+    prompt_session = create_prompt_session(model_name=client.model)
 
     while True:
         try:
-            content = prompt_session.prompt("\nVous: ")
+            console.print()
+            console.rule(style="dim")
+            content = prompt_session.prompt()
 
-            if content.lower() in ["quit", "exit"]:
+            if content.strip().lower() in ["quit", "exit", "/quit", "/exit"]:
                 console.print("\n[bold cyan]End of conversation.[/bold cyan]")
                 break
 

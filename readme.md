@@ -48,6 +48,17 @@ Simply run the main script to interact with the agent from your terminal:
     python3 main.py
     `
 
+### Keyboard shortcuts
+
+| Key | Action |
+| --- | --- |
+| `Enter` | Send the message |
+| `Alt+Enter` (or `Esc` then `Enter`) | New line |
+| `↑` / `↓` | Browse previous messages (saved across sessions) |
+| `Ctrl+C` | Clear the input; press twice on an empty input to quit |
+| `Ctrl+D` | Quit on an empty input |
+| `Ctrl+Z` | Undo |
+
 ## ROADMAP
 
 This project is being developed iteratively. Here are the approximate development stages:
@@ -71,7 +82,7 @@ This project is being developed iteratively. Here are the approximate developmen
 
 * Arguments to load a model, a system prompt, a URL, and a maximum number of iterations ✅
 * Response streaming: displaying tokens as they are generated ✅
-* Better input
+* Better input ✅
 * Markdown rendering and colors ✅
 * `config.toml` for loading default configurations
 
