@@ -72,7 +72,7 @@ This project is being developed iteratively. Here are the approximate developmen
 * Arguments to load a model, a system prompt, a URL, and a maximum number of iterations ✅
 * Response streaming: displaying tokens as they are generated ✅
 * Better input
-* Markdown rendering and colors
+* Markdown rendering and colors ✅
 * `config.toml` for loading default configurations
 
 ### Phase 3 - Level Up
