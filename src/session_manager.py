@@ -53,10 +53,10 @@ class SessionManager:
         self.messages.append(msg)
 
     @staticmethod
-    def list():
-        """Affiche toutes les sessions disponibles dans ./history/"""
+    def list(sessions_dir: str = "history"):
+        """Affiche toutes les sessions disponibles dans le dossier d'historique."""
 
-        sessions_dir = Path("./history")
+        sessions_dir = Path(sessions_dir)
         if not sessions_dir.exists():
             console.print("[yellow]Erreur: Dossier introuvable.[/yellow]")
             return
@@ -88,9 +88,9 @@ class SessionManager:
         print()
     
     @staticmethod
-    def clear(target: str):
+    def clear(target: str, sessions_dir: str = "history"):
         """Gère la suppression des sessions."""
-        sessions_dir = Path("./history")
+        sessions_dir = Path(sessions_dir)
         if not sessions_dir.exists():
             console.print("[yellow]Aucun dossier d'history à nettoyer[/yellow]")
             return
@@ -111,7 +111,7 @@ class SessionManager:
                 console.print("Suppression annulée.")
             return
         
-        file_to_delete = find_session_file(target)
+        file_to_delete = find_session_file(target, sessions_dir)
 
         if file_to_delete:
             target_path = sessions_dir / file_to_delete

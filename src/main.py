@@ -7,43 +7,53 @@ from rich.live import Live
 from rich.markdown import Markdown
 
 from client import LocalLLMClient
+from config import load_config
 from input_prompt import create_prompt_session
 from session_manager import SessionManager
 from utils.find_session_file import find_session_file
 
 console = Console()
 
-def build_parser() -> argparse.ArgumentParser:
+DEFAULT_CONFIG_PATH = "config.toml"
+
+def build_parser(config: dict) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")
 
     parser.add_argument(
+        "-c", "--config",
+        type=str,
+        default=DEFAULT_CONFIG_PATH,
+        help="Le chemin vers le fichier de configuration TOML (défaut: %(default)s)"
+    )
+    parser.add_argument(
         "-m", "--model",
         type=str,
-        default="qwen3.5:9b",
-        help="Le modèle à utiliser (défault: qwen3.5:9b)"
+        default=config["model"]["name"],
+        help="Le modèle à utiliser (défaut: %(default)s)"
     )
     parser.add_argument(
         "-s", "--sys-prompt",
         type=str,
-        default="system_prompt.txt",
-        help="Le chemin vers le fichier du system prompt (défaut: system_prompt.txt)"
+        default=config["model"]["system_prompt"],
+        help="Le chemin vers le fichier du system prompt (défaut: %(default)s)"
     )
     parser.add_argument(
         "-u", "--url",
         type=str,
-        default="http://localhost:11434/api/chat",
-        help="L'URL de l'API Ollama (défault: http://localhost:11434/api/chat)"
+        default=config["model"]["url"],
+        help="L'URL de l'API Ollama (défaut: %(default)s)"
     )
     parser.add_argument(
         "-i", "--max-iterations",
         type=int,
-        default=15,
-        help="Nombre maximum d'itérations pour les outils (défault: 15)"
+        default=config["agent"]["max_iterations"],
+        help="Nombre maximum d'itérations pour les outils (défaut: %(default)s)"
     )
     parser.add_argument(
         "--disable-thinking",
-        action="store_true",
-        help="Désactive le mode de réflexion (thinking) du modèle"
+        action=argparse.BooleanOptionalAction,
+        default=config["model"]["disable_thinking"],
+        help="Désactive le mode de réflexion (thinking) du modèle (défaut: %(default)s)"
     )
     parser.add_argument(
         "--list",
@@ -65,14 +75,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
-def run_chat(client: LocalLLMClient):
+def run_chat(client: LocalLLMClient, history_dir: str):
     console.print(Panel(
         "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\n"
         "Tapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter "
         "(ou Ctrl+C deux fois sur une saisie vide).",
         border_style="cyan"))
 
-    prompt_session = create_prompt_session(model_name=client.model)
+    prompt_session = create_prompt_session(model_name=client.model, history_dir=history_dir)
 
     while True:
         try:
@@ -103,10 +113,10 @@ def run_chat(client: LocalLLMClient):
             console.print("\n[bold cyan]End of conversation.[/bold cyan]")
             return
 
-def create_client(args) -> LocalLLMClient:
+def create_client(args, config: dict) -> LocalLLMClient:
     session_file_to_load = None
     if args.resume:
-        session_file_to_load = find_session_file(args.resume)
+        session_file_to_load = find_session_file(args.resume, config["paths"]["history_dir"])
         if not session_file_to_load:
             console.print(f"[bold red]Impossible de trouver une session correspondant à '{args.resume}'[/bold red]")
             sys.exit(1)
@@ -117,23 +127,38 @@ def create_client(args) -> LocalLLMClient:
         sys_prompt_path=args.sys_prompt,
         max_iterations=args.max_iterations,
         disable_thinking=args.disable_thinking,
-        session_file=session_file_to_load
+        session_file=session_file_to_load,
+        options=config["model"]["options"],
+        tools_config=config["tools"],
+        history_dir=config["paths"]["history_dir"]
     )
 
+def load_config_from_args() -> dict:
+    """Lit uniquement --config pour charger le fichier avant de construire le vrai parser."""
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument("-c", "--config", default=None)
+    pre_args, _ = pre_parser.parse_known_args()
+
+    if pre_args.config:
+        return load_config(pre_args.config, explicit=True)
+    return load_config(DEFAULT_CONFIG_PATH)
+
 def main():
-    args = build_parser().parse_args()
+    config = load_config_from_args()
+    args = build_parser(config).parse_args()
+    history_dir = config["paths"]["history_dir"]
 
     if args.clear:
-        SessionManager.clear(args.clear)
+        SessionManager.clear(args.clear, history_dir)
         sys.exit(0)
 
     if args.list:
-        SessionManager.list()
+        SessionManager.list(history_dir)
         sys.exit(0)
 
-    client = create_client(args)
+    client = create_client(args, config)
 
-    run_chat(client)
+    run_chat(client, history_dir)
 
 if __name__ == "__main__":
     main()

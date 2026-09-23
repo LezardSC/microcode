@@ -9,7 +9,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 from prompt_toolkit.validation import Validator, ValidationError
 
-HISTORY_FILE = Path("./history/.input_history")
+HISTORY_FILENAME = ".input_history"
 EXIT_CONFIRM_DELAY = 2.0  # seconds allowed between two Ctrl+C to quit
 
 STYLE = Style.from_dict({
@@ -77,7 +77,7 @@ def _setup_key_bindings(state: dict) -> KeyBindings:
     return bindings
 
 
-def create_prompt_session(model_name: str) -> PromptSession:
+def create_prompt_session(model_name: str, history_dir: str = "history") -> PromptSession:
     """Crée la zone de saisie : multiligne, historique persistant et barre d'aide."""
     state = {"last_ctrl_c": 0.0}
 
@@ -88,7 +88,8 @@ def create_prompt_session(model_name: str) -> PromptSession:
             f"  Entrée envoyer · Alt+Entrée nouvelle ligne · Ctrl+C effacer · {model_name}"
         )
 
-    HISTORY_FILE.parent.mkdir(exist_ok=True)
+    history_file = Path(history_dir) / HISTORY_FILENAME
+    history_file.parent.mkdir(exist_ok=True)
 
     return PromptSession(
         message=[("class:prompt", "> ")],
@@ -97,7 +98,7 @@ def create_prompt_session(model_name: str) -> PromptSession:
         bottom_toolbar=bottom_toolbar,
         style=STYLE,
         key_bindings=_setup_key_bindings(state),
-        history=FileHistory(str(HISTORY_FILE)),
+        history=FileHistory(str(history_file)),
         validator=NonEmptyValidator(),
         validate_while_typing=False,
         multiline=True,
