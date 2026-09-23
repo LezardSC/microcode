@@ -11,6 +11,19 @@ from bs4 import BeautifulSoup
 from utils.math_eval import evaluate_ast
 
 class Tools:
+    def __init__(
+            self,
+            request_timeout=8,
+            fetch_url_max_chars=5000,
+            read_file_max_kb=500,
+            search_max_results=10,
+            search_extract_chars=1000):
+        self._timeout = request_timeout
+        self._fetch_url_max_chars = fetch_url_max_chars
+        self._read_file_max_kb = read_file_max_kb
+        self._search_max_results = search_max_results
+        self._search_extract_chars = search_extract_chars
+
     def fetch_url(self, url: str) -> str:
         """
         Lit et extrait le contenu textuel complet d'une page Web spécifique.
@@ -23,7 +36,7 @@ class Tools:
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
 
-            page = requests.get(url, headers=headers, timeout=8)
+            page = requests.get(url, headers=headers, timeout=self._timeout)
             page.raise_for_status()
 
             soup = BeautifulSoup(page.content, 'html.parser')
@@ -34,9 +47,10 @@ class Tools:
 
             text = soup.get_text(separator=' ', strip=True)
 
-            extract = text[:5000]
-            if len(text) > 5000:
-                extract += "\n\n[The content is too long, only the first 5000 characters are shown.]"
+            max_chars = self._fetch_url_max_chars
+            extract = text[:max_chars]
+            if len(text) > max_chars:
+                extract += f"\n\n[The content is too long, only the first {max_chars} characters are shown.]"
 
             return f"Content of the page at URL '{url}':\n{extract}"
 
@@ -54,7 +68,7 @@ class Tools:
         """
         try:
             with DDGS() as ddgs:
-                results = [r for r in ddgs.text(query, max_results=10)]
+                results = [r for r in ddgs.text(query, max_results=self._search_max_results)]
 
             if not results:
                 return f"No result found on Internet for '{query}'."
@@ -62,7 +76,7 @@ class Tools:
             context = f"Results for Internet search of '{query}': \n\n"
             for i, res in enumerate(results, 1):
                 title = res.get('title', 'unknown title')
-                context += f"[{i}] Title: {title}\nURL: {res['href']}\nExtract: {res['body'][:1000]}\n\n"
+                context += f"[{i}] Title: {title}\nURL: {res['href']}\nExtract: {res['body'][:self._search_extract_chars]}\n\n"
         
             return context
 
@@ -111,10 +125,10 @@ class Tools:
             if not file_path.is_file():
                 return f"Error: '{path} is a folder, not a readable file."
 
-            # Reading the file with size limitation (500 kb)
-            max_bytes = 500 * 1024
+            # Reading the file with size limitation
+            max_bytes = self._read_file_max_kb * 1024
             if file_path.stat().st_size > max_bytes:
-                return f"Error: The file is too big ({file_path.stat().st_size / 1024:.1f} KB). The limit is 500 KB."
+                return f"Error: The file is too big ({file_path.stat().st_size / 1024:.1f} KB). The limit is {self._read_file_max_kb} KB."
             
             with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
@@ -138,7 +152,7 @@ class Tools:
                 "User-Agent": "local_llm_client/1.0"
             }
 
-            page = requests.get(url, headers=headers, timeout=8)
+            page = requests.get(url, headers=headers, timeout=self._timeout)
             page.raise_for_status()
 
 
@@ -172,7 +186,7 @@ class Tools:
                 "format": "json"
             }
 
-            search_response = requests.get(api, params=search_params, headers=headers)
+            search_response = requests.get(api, params=search_params, headers=headers, timeout=self._timeout)
             search_response.raise_for_status()
             search_data = search_response.json()
 
@@ -194,7 +208,7 @@ class Tools:
                 "redirects": 1
             }
 
-            response = requests.get(api, params=params, headers=headers)
+            response = requests.get(api, params=params, headers=headers, timeout=self._timeout)
             response.raise_for_status()
             data = response.json()
 

@@ -1,0 +1,32 @@
+# Minicode configuration.
+# Copy this file to config.toml and edit it: cp config.example.toml config.toml
+# Precedence: built-in defaults < config.toml < command-line flags.
+# Every key is optional; missing keys keep their default value.
+
+[model]
+name = "qwen3.5:9b"
+url = "http://localhost:11434/api/chat"
+system_prompt = "system_prompt.txt"
+disable_thinking = false
+
+# Sent as-is in the Ollama "options" field of every chat request.
+# Any Ollama option is accepted here (temperature, num_ctx, top_p...).
+[model.options]
+# The qwen3.5 Modelfile bakes in 1.5, which caused empty or hallucinated
+# answers in tool-calling loops. Keep it low.
+presence_penalty = 0.0
+# temperature = 0.7
+# num_ctx = 8192
+
+[agent]
+max_iterations = 15
+
+[tools]
+request_timeout = 8          # seconds, for every outbound HTTP request
+fetch_url_max_chars = 5000   # page text returned by fetch_url
+read_file_max_kb = 500       # largest file read_file accepts
+search_max_results = 10      # results returned by search_web
+search_extract_chars = 1000  # characters kept per search result
+
+[paths]
+history_dir = "history"      # sessions and input history

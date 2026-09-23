@@ -48,6 +48,16 @@ Simply run the main script to interact with the agent from your terminal:
     python3 main.py
     `
 
+### Configuration
+
+Default settings (model, Ollama URL, system prompt, model options, tool limits, history folder) can be set in a `config.toml` file at the root of the project:
+
+```bash
+cp config.example.toml config.toml
+```
+
+Every key is optional. Command-line flags always win over the file (built-in defaults < `config.toml` < flags). Use `--config path/to/file.toml` to load another file.
+
 ### Keyboard shortcuts
 
 | Key | Action |
@@ -84,7 +94,7 @@ This project is being developed iteratively. Here are the approximate developmen
 * Response streaming: displaying tokens as they are generated ✅
 * Better input ✅
 * Markdown rendering and colors ✅
-* `config.toml` for loading default configurations
+* `config.toml` for loading default configurations ✅
 
 ### Phase 3 - Level Up
 

@@ -20,17 +20,23 @@ class LocalLLMClient:
             sys_prompt_path='system_prompt.txt',
             max_iterations=15,
             disable_thinking=False,
-            session_file=None):
+            session_file=None,
+            options=None,
+            tools_config=None,
+            history_dir="history"):
         self.model = model_name
         self.url = base_url
         self.max_iterations = max_iterations
         self.disable_thinking = disable_thinking
+        # Ollama "options" sent with each request. See config.py for why
+        # presence_penalty is forced to 0.0 by default.
+        self.options = options if options is not None else {"presence_penalty": 0.0}
 
-        self.tools_instance = Tools()
+        self.tools_instance = Tools(**(tools_config or {}))
         self.tools_schema = Tools.generate_schema()
         self.title_generator = TitleGenerator(self.model, self.url)
 
-        session_dir = Path("./history")
+        session_dir = Path(history_dir)
         session_dir.mkdir(exist_ok=True)
 
         if session_file:
@@ -116,14 +122,7 @@ class LocalLLMClient:
                 "messages": self.messages,
                 "stream": True,
                 "tools": self.tools_schema,
-                "options": {
-                    # The qwen3.5:9b Modelfile bakes in presence_penalty=1.5, which is
-                    # extreme (normal range is ~0-0.5) and actively fights against the
-                    # model reusing numbers/words already seen earlier in the conversation
-                    # (like restating a tool result). This caused empty or hallucinated
-                    # responses in longer tool-calling exchanges.
-                    "presence_penalty": 0.0,
-                },
+                "options": self.options,
             }
             if self.disable_thinking:
                 request_payload["think"] = False
