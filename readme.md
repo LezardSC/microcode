@@ -60,6 +60,8 @@ cp config.example.toml config.toml
 
 Every key is optional. Command-line flags always win over the file (built-in defaults < `config.toml` < flags). Use `--config path/to/file.toml` to load another file.
 
+System prompts live in the `system_prompts/` folder. The default one (`system_prompts/system_prompt.txt`) is in English. A French version is available: `python3 src/main.py -s system_prompts/system_prompt_fr.txt`, or `system_prompt = "system_prompts/system_prompt_fr.txt"` under `[model]` in `config.toml`.
+
 ### Keyboard shortcuts
 
 | Key | Action |

@@ -26,9 +26,9 @@ class Tools:
 
     def fetch_url(self, url: str) -> str:
         """
-        Lit et extrait le contenu textuel complet d'une page Web spécifique.
-        Peut être utilisé après l'outil `search_web` en lui passant l'URL exacte à explorer.
-        url: L'adresse complète de la page (ex: 'https://google.com') 
+        Read and extract the full text content of a specific web page.
+        Can be used after the `search_web` tool, by passing it the exact URL to explore.
+        url: The full address of the page (e.g. 'https://google.com')
         """
         try:
             # Using a common User-Agent to avoid being blocked by some websites.
@@ -61,10 +61,10 @@ class Tools:
 
     def search_web(self, query: str) -> str:
         """
-        Recherche des informations récentes ou des actualités sur Internet.
-        A utiliser uniquement si tes connaissances ne suffisent pas.
-        Utilise cet outil pour découvrir des URL pertinentes que tu pourras ensuite explorer avec `fetch_url` si besoin.
-        query: les mots-clés de la recherche.
+        Search the Internet for recent information or news.
+        Use it only when your own knowledge isn't enough.
+        Use this tool to find relevant URLs, which you can then explore with `fetch_url` if needed.
+        query: the search keywords.
         """
         try:
             with DDGS() as ddgs:
@@ -91,9 +91,9 @@ class Tools:
         try:
             # split an expression into a tree of mathematical objects
             tree = ast.parse(expression, mode='eval').body
-            resultat = evaluate_ast(tree)
+            result = evaluate_ast(tree)
             
-            return str(resultat)
+            return str(result)
         
         except SyntaxError:
             return "Error: Invalid mathematic syntax."
@@ -105,14 +105,14 @@ class Tools:
     
     def read_file(self, path: str) -> str:
         """
-        Lit le contenu textuel d'un fichier local (code, txt, md, csv, etc.) pour l'analyser.
-        Prend en charge les chemins relatifs ou absolus.
-        path: Le chemin vers le fichier (example. 'data.txt', '/home/user/script.py' ou 'C:\\Users\\...').
+        Read the text content of a local file (code, txt, md, csv, etc.) to analyse it.
+        Accepts relative or absolute paths.
+        path: The path to the file (e.g. 'data.txt', '/home/user/script.py' or 'C:\\Users\\...').
         """
         try:
             clean_path = path.strip("'\"")
 
-            # If the path start with a letter of Window disk (ex: C:\ ou D:\) and we're on WSL/Linux
+            # If the path starts with a Windows drive letter (e.g. C:\ or D:\) and we're on WSL/Linux
             if os.name == 'posix' and len(clean_path) > 1 and clean_path[1] == ':':
                 drive = clean_path[0].lower()
                 remainder = clean_path[2:].replace('\\', '/')
@@ -141,13 +141,13 @@ class Tools:
 
     def get_weather(self, city: str) -> str:
         """
-        Obtient les conditions météo actuelles pour une ville donnée.
-        city: Le nom de la ville ou de la région (example: 'Paris', 'Texas')
+        Get the current weather conditions for a given city.
+        city: The name of the city or region (e.g. 'Paris', 'Texas')
         """
         try:
             # wttr.in?format=3 return a single clean line: "Paris: ⛅️ +18°C ↙️ 11km/h"
             # format=4 give even more details (wetness, rain...)
-            url = f"https://wttr.in/{city}?format=4&lang=fr"
+            url = f"https://wttr.in/{city}?format=4"
             headers = {
                 "User-Agent": "local_llm_client/1.0"
             }
@@ -157,24 +157,24 @@ class Tools:
 
 
             if "Location not found" in page.text:
-                return f"meteo not found for the city: '{city}'."
+                return f"Weather not found for the city: '{city}'."
             
-            return f"Meteo in {city}:\n{page.text.strip()}"
+            return f"Weather in {city}:\n{page.text.strip()}"
 
         except Exception as e:
-            return f"Error: Can't get meteo for {city}: {e}."
+            return f"Error: Can't get the weather for {city}: {e}."
 
     def search_wikipedia(self, query: str) -> str:
         """
-        À utiliser si l'utilisateur demande une information 
-        history, une biographie, un fait précis ou un concept technique que tu ne connais pas.
-        NE PAS utiliser pour les discussions générales, les salutations, ou si tu possèdes 
-        déjà la réponse de manière certaine dans tes connaissances.
-        query: Le sujet précis à rechercher, en français (même si l'utilisateur écrit 
-        dans une autre langue, il faudra retraduire derrière).
+        Use it when the user asks for historical information, a biography,
+        a precise fact or a technical concept you don't know.
+        DO NOT use it for general discussion, greetings, or when you already
+        know the answer for certain.
+        query: The precise subject to search for, in English (even if the user writes
+        in another language; translate the result back afterwards).
         """
         try:
-            api = "https://fr.wikipedia.org/w/api.php"
+            api = "https://en.wikipedia.org/w/api.php"
             headers = {
                 "User-Agent": "local_llm_client/1.0"
             }

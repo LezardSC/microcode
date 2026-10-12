@@ -11,7 +11,7 @@ DEFAULTS = {
     "model": {
         "name": "qwen3.5:9b",
         "url": "http://localhost:11434/api/chat",
-        "system_prompt": "system_prompt.txt",
+        "system_prompt": "system_prompts/system_prompt.txt",
         "disable_thinking": False,
         # Sent as-is in the Ollama "options" field of every chat request.
         "options": {
@@ -46,7 +46,7 @@ FREE_TABLES = {"model.options"}
 
 
 def load_config(path: str, explicit: bool = False) -> dict:
-    """Charge config.toml et le fusionne avec les valeurs par défaut."""
+    """Load config.toml and merge it onto the defaults."""
     config = copy.deepcopy(DEFAULTS)
     config_path = Path(path)
 
@@ -68,7 +68,7 @@ def load_config(path: str, explicit: bool = False) -> dict:
 
 
 def _merge(base: dict, override: dict, prefix: str):
-    """Fusionne récursivement `override` dans `base`, avec des warnings pour les clés invalides."""
+    """Recursively merge `override` into `base`, warning about invalid keys."""
     for key, value in override.items():
         full_key = f"{prefix}{key}"
 

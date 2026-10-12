@@ -25,7 +25,7 @@ class NonEmptyValidator(Validator):
         text = document.text.strip()
         if not text:
             raise ValidationError(
-                message="Le message ne peut pas être vide",
+                message="The message can't be empty",
                 cursor_position=0
             )
 
@@ -36,7 +36,7 @@ async def _refresh_after_delay(app):
 
 
 def _setup_key_bindings(state: dict) -> KeyBindings:
-    """Configure et retourne les raccourcis clavier pour prompt_toolkit."""
+    """Set up and return the prompt_toolkit key bindings."""
     bindings = KeyBindings()
 
     @bindings.add('escape', 'enter')
@@ -78,14 +78,14 @@ def _setup_key_bindings(state: dict) -> KeyBindings:
 
 
 def create_prompt_session(model_name: str, history_dir: str = "history") -> PromptSession:
-    """Crée la zone de saisie : multiligne, historique persistant et barre d'aide."""
+    """Create the input area: multiline, persistent history and a help toolbar."""
     state = {"last_ctrl_c": 0.0}
 
     def bottom_toolbar():
         if time.monotonic() - state["last_ctrl_c"] < EXIT_CONFIRM_DELAY:
-            return HTML("<warning>  Appuyez à nouveau sur Ctrl+C pour quitter</warning>")
+            return HTML("<warning>  Press Ctrl+C again to quit</warning>")
         return HTML(
-            f"  Entrée envoyer · Alt+Entrée nouvelle ligne · Ctrl+C effacer · {model_name}"
+            f"  Enter send · Alt+Enter new line · Ctrl+C clear · {model_name}"
         )
 
     history_file = Path(history_dir) / HISTORY_FILENAME
@@ -94,7 +94,7 @@ def create_prompt_session(model_name: str, history_dir: str = "history") -> Prom
     return PromptSession(
         message=[("class:prompt", "> ")],
         prompt_continuation="  ",
-        placeholder=[("class:placeholder", "Écrivez votre message…")],
+        placeholder=[("class:placeholder", "Type your message…")],
         bottom_toolbar=bottom_toolbar,
         style=STYLE,
         key_bindings=_setup_key_bindings(state),

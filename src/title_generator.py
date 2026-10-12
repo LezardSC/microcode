@@ -7,12 +7,12 @@ class TitleGenerator:
         self.url = url
 
     def generate(self, first_prompt: str) -> str:
-        """Génère un titre stocké dans les métadonnées"""
+        """Generate a title, stored in the session metadata."""
         payload = {
             "model": self.model,
             "messages": [{
                     "role": "system",
-                    "content": "Génère un titre ultra court (2 à 6 mots) qui résume ce prompt. Ne renvoie QUE le titre."
+                    "content": "Generate a very short title (2 to 6 words) that sums up this prompt. Return ONLY the title."
                 },
                 {"role": "user", "content": first_prompt}
             ],

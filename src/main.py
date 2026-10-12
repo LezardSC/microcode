@@ -17,82 +17,82 @@ from utils.find_session_file import find_session_file
 console = Console()
 
 DEFAULT_CONFIG_PATH = "config.toml"
-THINKING_LABEL = "[bold green]Le modèle réfléchit..."
+THINKING_LABEL = "[bold green]Thinking..."
 MAX_ARGS_DISPLAY = 60
 
 def build_parser(config: dict) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")
+    parser = argparse.ArgumentParser(description="Local LLM agent for the command line.")
 
     parser.add_argument(
         "-c", "--config",
         type=str,
         default=DEFAULT_CONFIG_PATH,
-        help="Le chemin vers le fichier de configuration TOML (défaut: %(default)s)"
+        help="Path to the TOML config file (default: %(default)s)"
     )
     parser.add_argument(
         "-m", "--model",
         type=str,
         default=config["model"]["name"],
-        help="Le modèle à utiliser (défaut: %(default)s)"
+        help="Model to use (default: %(default)s)"
     )
     parser.add_argument(
         "-s", "--sys-prompt",
         type=str,
         default=config["model"]["system_prompt"],
-        help="Le chemin vers le fichier du system prompt (défaut: %(default)s)"
+        help="Path to the system prompt file (default: %(default)s)"
     )
     parser.add_argument(
         "-u", "--url",
         type=str,
         default=config["model"]["url"],
-        help="L'URL de l'API Ollama (défaut: %(default)s)"
+        help="Ollama API URL (default: %(default)s)"
     )
     parser.add_argument(
         "-i", "--max-iterations",
         type=int,
         default=config["agent"]["max_iterations"],
-        help="Nombre maximum d'itérations pour les outils (défaut: %(default)s)"
+        help="Maximum number of tool iterations (default: %(default)s)"
     )
     parser.add_argument(
         "--disable-thinking",
         action=argparse.BooleanOptionalAction,
         default=config["model"]["disable_thinking"],
-        help="Désactive le mode de réflexion (thinking) du modèle (défaut: %(default)s)"
+        help="Disable the model's thinking mode (default: %(default)s)"
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="Liste toutes les sessions sauvegardées",
+        help="List all saved sessions",
     )
     parser.add_argument(
         "--resume",
         nargs="?",
         const="LAST",
         default=None,
-        help="Chemin vers le fichier JSON pour sauvegarder/charger l'history. Sans arguments, reprends la dernière session."
+        help="Resume a saved session by name or index. Without an argument, resumes the latest session."
     )
     parser.add_argument(
         "--clear",
         type=str,
-        help="Supprime une session par son index ou son nom, ou tapez 'all' pour tout supprimer"
+        help="Delete a session by index or name, or 'all' to delete every session"
     )
 
     return parser
 
 def format_tool_call(event: ToolStart) -> str:
-    """Formate un appel d'outil en `nom(arg="valeur")`, tronqué si trop long."""
+    """Format a tool call as `name(arg="value")`, truncated when too long."""
     args = ", ".join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in event.args.items())
     if len(args) > MAX_ARGS_DISPLAY:
         args = args[:MAX_ARGS_DISPLAY - 1] + "…"
     return f"{event.name}({args})"
 
 def wait_next(events, label):
-    """Attend l'événement suivant derrière un spinner. Renvoie None à la fin du flux."""
+    """Wait for the next event behind a spinner. Returns None at the end of the stream."""
     with console.status(label, spinner="dots"):
         return next(events, None)
 
 def render_response(stream, show_tool_calls: bool):
-    """Affiche la réponse de l'agent: texte en Markdown, appels d'outils en lignes discrètes."""
+    """Render the agent's answer: text as Markdown, tool calls as dim lines."""
     events = iter(stream)
     previous = None
     event = wait_next(events, THINKING_LABEL)
@@ -132,9 +132,9 @@ def render_response(stream, show_tool_calls: bool):
 
 def run_chat(client: LocalLLMClient, history_dir: str, show_tool_calls: bool):
     console.print(Panel(
-        "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\n"
-        "Tapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter "
-        "(ou Ctrl+C deux fois sur une saisie vide).",
+        "\n[bold cyan]Local LLM agent started[/bold cyan]\n"
+        "Type [bold red]'quit'[/bold red] or [bold red]'exit'[/bold red] to leave "
+        "(or press Ctrl+C twice on an empty input).",
         border_style="cyan"))
 
     prompt_session = create_prompt_session(model_name=client.model, history_dir=history_dir)
@@ -165,7 +165,7 @@ def create_client(args, config: dict) -> LocalLLMClient:
     if args.resume:
         session_file_to_load = find_session_file(args.resume, config["paths"]["history_dir"])
         if not session_file_to_load:
-            console.print(f"[bold red]Impossible de trouver une session correspondant à '{args.resume}'[/bold red]")
+            console.print(f"[bold red]No session matches '{args.resume}'[/bold red]")
             sys.exit(1)
 
     return LocalLLMClient(
@@ -181,7 +181,7 @@ def create_client(args, config: dict) -> LocalLLMClient:
     )
 
 def load_config_from_args() -> dict:
-    """Lit uniquement --config pour charger le fichier avant de construire le vrai parser."""
+    """Read only --config, to load the file before building the real parser."""
     pre_parser = argparse.ArgumentParser(add_help=False)
     pre_parser.add_argument("-c", "--config", default=None)
     pre_args, _ = pre_parser.parse_known_args()
