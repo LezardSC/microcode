@@ -11,7 +11,7 @@ from session_manager import SessionManager
 from title_generator import TitleGenerator
 from tools import Tools
 
-DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. Réponds de manière concise et précise. Si tu ne connais pas la réponse, dis que tu ne sais pas plutôt que d'inventer une réponse."
+DEFAULT_SYS_PROMPT = "You are a smart and helpful assistant. Answer concisely and precisely. If you don't know the answer, say so instead of making one up."
 
 @dataclass
 class TextChunk:
@@ -31,12 +31,12 @@ class ToolEnd:
 AgentEvent = Union[TextChunk, ToolStart, ToolEnd]
 
 class LocalLLMClient:
-    """Handle communication with the locale API of the LLM."""
+    """Handle communication with the local API of the LLM."""
     def __init__(
             self,
             model_name="qwen3.5:9b",
             base_url="http://localhost:11434/api/chat",
-            sys_prompt_path='system_prompt.txt',
+            sys_prompt_path='system_prompts/system_prompt.txt',
             max_iterations=15,
             disable_thinking=False,
             session_file=None,
@@ -73,16 +73,16 @@ class LocalLLMClient:
     
     @property
     def messages(self):
-        """Permet un appel moins verbeux aux messages"""
+        """Shorter access to the session messages."""
         return self.session.messages
     
     @property
     def metadata(self):
-        """Raccourci pour accéder aux métadonnées de la session"""
+        """Shortcut to the session metadata."""
         return self.session.metadata
     
     def _init_system_prompt(self, sys_prompt_path):
-        """Génère le prompt système initial."""
+        """Build the initial system prompt."""
         system_prompt = self._read_system_prompt(sys_prompt_path)
         if not system_prompt:
             system_prompt = DEFAULT_SYS_PROMPT
@@ -127,13 +127,13 @@ class LocalLLMClient:
     def send_message(self, user_content: str) -> Iterator[AgentEvent]:
         self.session.add_message("user", user_content)
 
-        if len(self.messages) == 2 and self.metadata.get("title") == "Nouvelle conversation":
+        if len(self.messages) == 2 and self.metadata.get("title") == "New conversation":
             try:
                 title= self.title_generator.generate(user_content)
                 self.session.metadata["title"] = title
                 self.session.rename(title)
             except Exception as e:
-                print(f"\n[Warning: Impossible de générer le titre -> {e}]")
+                print(f"\n[Warning: Can't generate the title -> {e}]")
 
         for _ in range(self.max_iterations):
             request_payload = {
@@ -183,7 +183,7 @@ class LocalLLMClient:
                 self.session.add_message("assistant", final_content)
                 self.session.save()
                 if not final_content.strip():
-                    yield TextChunk("\n[Le modèle n'a donné aucune réponse.]")
+                    yield TextChunk("\n[The model gave no answer.]")
                 return
 
             self.session.add_message(

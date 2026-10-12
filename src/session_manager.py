@@ -19,12 +19,12 @@ class SessionManager:
             "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
             "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
             "system_prompt": "",
-            "title": "Nouvelle conversation"
+            "title": "New conversation"
         }
         self.messages = []
     
     def load(self):
-        """Charge une session existante incluant métadonnées et messages."""
+        """Load an existing session, metadata and messages."""
         if self.session_path.exists():
             with open(self.session_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -32,10 +32,10 @@ class SessionManager:
                 self.metadata = data.get("metadata", self.metadata)
                 self.messages = data.get("messages", [])
 
-                console.print(f"[bold cyan]Session chargée: {self.metadata.get('title', 'Sans titre')} ({self.session_path.name})[/bold cyan]")
+                console.print(f"[bold cyan]Session loaded: {self.metadata.get('title', 'Untitled')} ({self.session_path.name})[/bold cyan]")
 
     def save(self):
-        """Sauvegarde la session (métadonnées + messages)."""
+        """Save the session (metadata + messages)."""
         self.metadata["updated_at"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
         data = {
@@ -54,61 +54,61 @@ class SessionManager:
 
     @staticmethod
     def list(sessions_dir: str = "history"):
-        """Affiche toutes les sessions disponibles dans le dossier d'historique."""
+        """Print every session available in the history folder."""
 
         sessions_dir = Path(sessions_dir)
         if not sessions_dir.exists():
-            console.print("[yellow]Erreur: Dossier introuvable.[/yellow]")
+            console.print("[yellow]Error: Folder not found.[/yellow]")
             return
         
         files = sorted(list(sessions_dir.glob("*.json")))
         if not files:
-            console.print("[yellow]Aucune session trouvée. Commence une conversation pour qu'elle soit sauvegardée ![/yellow]")
+            console.print("[yellow]No session found. Start a conversation to have it saved![/yellow]")
             return
         
-        table = Table(title="history des Conversations", title_style="bold blue")
+        table = Table(title="Conversation history", title_style="bold blue")
         table.add_column("ID", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Fichier", style="magenta")
-        table.add_column("Modèle", style="green")
-        table.add_column("Titre", style="white")
+        table.add_column("File", style="magenta")
+        table.add_column("Model", style="green")
+        table.add_column("Title", style="white")
 
         for idx, f in enumerate(files, start=1):
             try:
                 with open(f, "r", encoding="utf-8") as file:
                     data = json.load(file)
                     meta = data.get("metadata", {})
-                    title = meta.get("title", "Sans titre")
-                    model = meta.get("model", "inconnu")
+                    title = meta.get("title", "Untitled")
+                    model = meta.get("model", "unknown")
 
                     display_title = (title[:40] + '..') if len(title) > 40 else title
                     table.add_row(str(idx), f.name, model, display_title)
             except Exception:
-                table.add_row(str(idx), f.name, "---", "[red]/!\\ Fichier Corrompu[/red]")
+                table.add_row(str(idx), f.name, "---", "[red]/!\\ Corrupted file[/red]")
         console.print(table)
         print()
     
     @staticmethod
     def clear(target: str, sessions_dir: str = "history"):
-        """Gère la suppression des sessions."""
+        """Delete sessions."""
         sessions_dir = Path(sessions_dir)
         if not sessions_dir.exists():
-            console.print("[yellow]Aucun dossier d'history à nettoyer[/yellow]")
+            console.print("[yellow]No history folder to clean.[/yellow]")
             return
         
         if target.lower() == "all":
             files = list(sessions_dir.glob("*.json"))
             if not files:
-                console.print("[yellow]L'history est déjà vide.[/yellow]")
+                console.print("[yellow]The history is already empty.[/yellow]")
                 return
             
             prompt_session = PromptSession()
-            confirm = prompt_session.prompt(f"Êtes-vous sûr de vouloir supprimer toutes les sessions ({len(files)} fichiers) ? [Y/n]:\n")
+            confirm = prompt_session.prompt(f"Are you sure you want to delete every session ({len(files)} files)? [y/N]:\n")
             if confirm.lower() == 'y':
                 for f in files:
                     f.unlink()
-                console.print("[bold green]Toutes les sessions ont été supprimées.[/bold green]")
+                console.print("[bold green]All sessions were deleted.[/bold green]")
             else:
-                console.print("Suppression annulée.")
+                console.print("Deletion cancelled.")
             return
         
         file_to_delete = find_session_file(target, sessions_dir)
@@ -116,16 +116,16 @@ class SessionManager:
         if file_to_delete:
             target_path = sessions_dir / file_to_delete
             target_path.unlink()
-            console.print(f"[bold green]Session '{file_to_delete}' supprimée avec succès.[/bold green]")
+            console.print(f"[bold green]Session '{file_to_delete}' deleted.[/bold green]")
         else:
-            console.print(f"[bold red]Impossible de trouver la session correspondant à '{target}'.[/bold red]")
+            console.print(f"[bold red]No session matches '{target}'.[/bold red]")
     
     def rename(self, title: str):
         safe_filename = re.sub(r'[^\w\s-]', '', title).strip().lower()
         safe_filename = re.sub(r'[-\s]+', '_', safe_filename)
 
         if not safe_filename:
-            safe_filename = "conversation_sans_titre"
+            safe_filename = "untitled_conversation"
         
         new_path = self.session_path.parent / f"{safe_filename}.json"
 

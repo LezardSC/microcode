@@ -1,7 +1,7 @@
 from pathlib import Path
 
 def find_session_file(target: str, sessions_dir: str = "history") -> str:
-    """Trouve le fichier correspondant (dernier modifié, ou par nom)."""
+    """Find the matching session file (latest modified, by index, or by name)."""
     sessions_dir = Path(sessions_dir)
     if not sessions_dir.exists():
         return None
