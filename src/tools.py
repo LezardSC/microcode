@@ -162,7 +162,7 @@ class Tools:
             return f"Meteo in {city}:\n{page.text.strip()}"
 
         except Exception as e:
-            return f"Can't get meteo for {city}. Error: {e}."
+            return f"Error: Can't get meteo for {city}: {e}."
 
     def search_wikipedia(self, query: str) -> str:
         """
