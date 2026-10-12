@@ -227,11 +227,12 @@ class Tools:
             return f"Error on Wikipedia search: {str(e)}."
 
 
-    def get_time(self):
+    def get_time(self) -> str:
         """
-        Get the date and time of the system.
+        Get the current date, time and day of the week from the system clock.
         """
-        return str(datetime.now())
+        # Include the weekday: small models get it wrong when they compute it themselves.
+        return datetime.now().strftime("%A %Y-%m-%d %H:%M:%S")
 
     @classmethod
     def generate_schema(cls) -> list:
