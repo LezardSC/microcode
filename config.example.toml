@@ -1,4 +1,4 @@
-# Minicode configuration.
+# Microcode configuration.
 # Copy this file to config.toml and edit it: cp config.example.toml config.toml
 # Precedence: built-in defaults < config.toml < command-line flags.
 # Every key is optional; missing keys keep their default value.
