@@ -1,8 +1,10 @@
 import requests
 import re
 import json
+import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Union
 from datetime import datetime
 
 from session_manager import SessionManager
@@ -10,6 +12,23 @@ from title_generator import TitleGenerator
 from tools import Tools
 
 DEFAULT_SYS_PROMPT = "Tu es un assistant intelligent et utile. Réponds de manière concise et précise. Si tu ne connais pas la réponse, dis que tu ne sais pas plutôt que d'inventer une réponse."
+
+@dataclass
+class TextChunk:
+    text: str
+
+@dataclass
+class ToolStart:
+    name: str
+    args: dict
+
+@dataclass
+class ToolEnd:
+    name: str
+    ok: bool
+    duration: float
+
+AgentEvent = Union[TextChunk, ToolStart, ToolEnd]
 
 class LocalLLMClient:
     """Handle communication with the locale API of the LLM."""
@@ -105,7 +124,7 @@ class LocalLLMClient:
 
 
 
-    def send_message(self, user_content: str) -> Iterator[str]:
+    def send_message(self, user_content: str) -> Iterator[AgentEvent]:
         self.session.add_message("user", user_content)
 
         if len(self.messages) == 2 and self.metadata.get("title") == "Nouvelle conversation":
@@ -145,7 +164,7 @@ class LocalLLMClient:
                         content_piece = msg_chunk.get("content", "")
                         if content_piece:
                             accumulated_message["content"] += content_piece
-                            yield content_piece  # Stream the content piece to the caller
+                            yield TextChunk(content_piece)  # Stream the content piece to the caller
 
                         # Qwen3.5 sometimes writes its whole answer inside the hidden
                         # "thinking" field and never copies it to "content", leaving
@@ -159,18 +178,13 @@ class LocalLLMClient:
                 final_content = accumulated_message["content"]
                 if not final_content.strip() and accumulated_message["thinking"].strip():
                     final_content = accumulated_message["thinking"]
-                    yield final_content
+                    yield TextChunk(final_content)
 
                 self.session.add_message("assistant", final_content)
                 self.session.save()
                 if not final_content.strip():
-                    yield "\n[Le modèle n'a donné aucune réponse.]"
+                    yield TextChunk("\n[Le modèle n'a donné aucune réponse.]")
                 return
-
-            # Keep text streamed before the tool calls apart from the next answer,
-            # otherwise the two run together in the rendered Markdown.
-            if accumulated_message["content"].strip():
-                yield "\n\n"
 
             self.session.add_message(
                 "assistant",
@@ -181,25 +195,30 @@ class LocalLLMClient:
             for tool_call in accumulated_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
 
+                arguments = tool_call["function"].get("arguments", {})
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        arguments = {}
+
+                yield ToolStart(func_name, arguments)
+                start = time.perf_counter()
+
                 if hasattr(self.tools_instance, func_name):
                     func = getattr(self.tools_instance, func_name)
-
-                    arguments = tool_call["function"].get("arguments", {})
-                    if isinstance(arguments, str):
-                        try:
-                            arguments = json.loads(arguments)
-                        except json.JSONDecodeError:
-                            arguments = {}
-                    
                     try:
-                        result = func(**arguments)
+                        result = str(func(**arguments))
                     except Exception as e:
                         result = f"Execution error for {func_name}: {e}"
-                    
-                    self.session.add_message("tool", str(result)) 
                 else:
-                    self.session.add_message("tool", f"Error: the tool {func_name} doesn't exist.")
+                    result = f"Error: the tool {func_name} doesn't exist."
+
+                self.session.add_message("tool", result)
+                # Tools report failures as "Error: ..." strings instead of raising.
+                ok = not result.startswith(("Error", "Execution error"))
+                yield ToolEnd(func_name, ok, time.perf_counter() - start)
 
         self.session.save()
-        yield "\nError: Maximum iterations reached without final response."
+        yield TextChunk("\nError: Maximum iterations reached without final response.")
         return

@@ -36,6 +36,9 @@ DEFAULTS = {
     "paths": {
         "history_dir": "history",
     },
+    "display": {
+        "show_tool_calls": True,
+    },
 }
 
 # Tables whose keys are free-form (any Ollama option is accepted).

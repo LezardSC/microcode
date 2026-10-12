@@ -30,3 +30,6 @@ search_extract_chars = 1000  # characters kept per search result
 
 [paths]
 history_dir = "history"      # sessions and input history
+
+[display]
+show_tool_calls = true       # print each tool call while the agent works
