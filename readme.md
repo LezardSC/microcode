@@ -9,7 +9,7 @@ I'm making it public because I tried to make it modular enough for someone else 
 
 * **Direct API communication**: Raw HTTP calls to the local Ollama API.
 * **Tool introspection**: Dynamic generation of tool JSON schemas (the LLM automatically understands the available Python functions through their *docstrings*).
-* **Autonomous ReAct loop**: The agent is able to chain multiple tool calls autonomously until the task is resolved.
+* **Autonomous ReAct loop**: The agent is able to chain multiple tool calls autonomously until the task is resolved. Each tool call is shown live in the terminal (name, arguments, success, duration); set `show_tool_calls = false` under `[display]` to hide it.
 * **Built-in tools**:
 
   * `search_web`: Quick internet search via DuckDuckGo.
@@ -50,7 +50,7 @@ Simply run the main script to interact with the agent from your terminal:
 
 ### Configuration
 
-Default settings (model, Ollama URL, system prompt, model options, tool limits, history folder) can be set in a `config.toml` file at the root of the project:
+Default settings (model, Ollama URL, system prompt, model options, tool limits, history folder, tool-call display) can be set in a `config.toml` file at the root of the project:
 
 ```bash
 cp config.example.toml config.toml
@@ -104,10 +104,10 @@ This project is being developed iteratively. Here are the approximate developmen
 * Code execution tool
 * Multimodality - images
 * Audio (speech-to-text)
-* Migration to the OpenAI SDK
 
 ### Phase 4 - Agent Framework
 
+* Migration to the OpenAI SDK
 * Exploring a framework (between LangGraph, CrewAI, or smolagents)
 * Reimplementing my current agent with the framework
 * Comparing them

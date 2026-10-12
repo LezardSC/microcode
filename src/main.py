@@ -1,12 +1,14 @@
 import argparse
+import json
 import sys
 import requests
 from rich.console import Console
 from rich.panel import Panel
 from rich.live import Live
 from rich.markdown import Markdown
+from rich.text import Text
 
-from client import LocalLLMClient
+from client import LocalLLMClient, TextChunk, ToolStart, ToolEnd
 from config import load_config
 from input_prompt import create_prompt_session
 from session_manager import SessionManager
@@ -15,6 +17,8 @@ from utils.find_session_file import find_session_file
 console = Console()
 
 DEFAULT_CONFIG_PATH = "config.toml"
+THINKING_LABEL = "[bold green]Le modèle réfléchit..."
+MAX_ARGS_DISPLAY = 60
 
 def build_parser(config: dict) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent LLM local en ligne de commande.")
@@ -75,7 +79,58 @@ def build_parser(config: dict) -> argparse.ArgumentParser:
 
     return parser
 
-def run_chat(client: LocalLLMClient, history_dir: str):
+def format_tool_call(event: ToolStart) -> str:
+    """Formate un appel d'outil en `nom(arg="valeur")`, tronqué si trop long."""
+    args = ", ".join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in event.args.items())
+    if len(args) > MAX_ARGS_DISPLAY:
+        args = args[:MAX_ARGS_DISPLAY - 1] + "…"
+    return f"{event.name}({args})"
+
+def wait_next(events, label):
+    """Attend l'événement suivant derrière un spinner. Renvoie None à la fin du flux."""
+    with console.status(label, spinner="dots"):
+        return next(events, None)
+
+def render_response(stream, show_tool_calls: bool):
+    """Affiche la réponse de l'agent: texte en Markdown, appels d'outils en lignes discrètes."""
+    events = iter(stream)
+    previous = None
+    event = wait_next(events, THINKING_LABEL)
+
+    while event is not None:
+        if isinstance(event, TextChunk):
+            if previous is not None:
+                console.print()
+            previous = "text"
+            text = event.text
+            with Live(Markdown(text), console=console, refresh_per_second=15) as live:
+                for event in events:
+                    if not isinstance(event, TextChunk):
+                        break
+                    text += event.text
+                    live.update(Markdown(text))
+                else:
+                    event = None
+            continue
+
+        if isinstance(event, ToolStart) and show_tool_calls:
+            if previous == "text":
+                console.print()
+            previous = "tool"
+            call = format_tool_call(event)
+            end = wait_next(events, Text(f"⚙ {call}", style="bold yellow"))
+            if isinstance(end, ToolEnd):
+                status = ("✓", "green") if end.ok else ("✗", "bold red")
+                console.print(Text.assemble(
+                    ("  ⚙ ", "dim"), (call, "dim"), "  ", status, (f" {end.duration:.1f}s", "dim")
+                ))
+            elif end is not None:
+                event = end
+                continue
+
+        event = wait_next(events, THINKING_LABEL)
+
+def run_chat(client: LocalLLMClient, history_dir: str, show_tool_calls: bool):
     console.print(Panel(
         "\n[bold cyan]Agent LLM Local démarré[/bold cyan]\n"
         "Tapez [bold red]'quit'[/bold red] ou [bold red]'exit'[/bold red] pour quitter "
@@ -96,15 +151,7 @@ def run_chat(client: LocalLLMClient, history_dir: str):
 
             console.print(f"\n[bold blue]Assistant:[/bold blue]\n")
 
-            stream = client.send_message(content)
-            with console.status("[bold green]Le modèle réfléchit...", spinner="dots"):
-                first_fragment = next(stream)
-
-            full_response = first_fragment
-            with Live(Markdown(full_response), console=console, refresh_per_second=15) as live:
-                for text_fragment in stream:
-                    full_response += text_fragment
-                    live.update(Markdown(full_response))
+            render_response(client.send_message(content), show_tool_calls)
             print()
 
         except requests.exceptions.RequestException as e:
@@ -158,7 +205,7 @@ def main():
 
     client = create_client(args, config)
 
-    run_chat(client, history_dir)
+    run_chat(client, history_dir, config["display"]["show_tool_calls"])
 
 if __name__ == "__main__":
     main()
