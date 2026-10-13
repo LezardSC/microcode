@@ -1,5 +1,4 @@
 # Microcode - Local Autonomous Agent (Ollama & Python)
-# Microcode - Local Autonomous Agent (Ollama & Python)
 
 Microcode (a reference to Opencode) is an autonomous LLM agent developed from scratch in Python.
 Microcode (a reference to Opencode) is an autonomous LLM agent developed from scratch in Python.
