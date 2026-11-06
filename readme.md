@@ -1,7 +1,6 @@
 # Microcode - Local Autonomous Agent (Ollama & Python)
 
 Microcode (a reference to Opencode) is an autonomous LLM agent developed from scratch in Python.
-Microcode (a reference to Opencode) is an autonomous LLM agent developed from scratch in Python.
 The goal of this project is to deeply understand how AI agents work (Tool Calling, ReAct loop, memory) by building everything "from scratch" before eventually moving on to heavier frameworks (LangGraph, CrewAI). The project relies on the local **Ollama** API (ideally with a model that is good at tool calling, such as Qwen 2.5 / 3.5).
 
 I'm making it public because I tried to make it modular enough for someone else to use, and as the roadmap progresses, this agent should be able to provide assistance to people who need a small agent for simple tasks without having to pay for or burn tokens on other services.
@@ -45,9 +44,10 @@ I'm making it public because I tried to make it modular enough for someone else 
 ## Usage
 
 Simply run the main script to interact with the agent from your terminal:
-`bash
-    python3 main.py
-    `
+
+```bash
+python3 src/main.py
+```
 
 ### Configuration
 
